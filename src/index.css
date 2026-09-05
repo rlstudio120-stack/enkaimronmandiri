@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* Menyesuaikan proporsi khusus untuk monitor laptop (misal 1366x768) */
+@media (min-width: 1024px) and (max-width: 1440px) {
+  html {
+    /* Mengecilkan ukuran dasar dari 16px ke 14px. 
+       Ini otomatis membuat lebar maksimal website menyusut dari 1280px menjadi 1120px, 
+       dan mengecilkan semua font secara proporsional. */
+    font-size: 14px; 
+  }
+}
