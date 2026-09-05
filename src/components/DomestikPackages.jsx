@@ -1,12 +1,25 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
 
 function DomestikPackages() {
-  const packages = [
-    { badge: "Terlaris", badgeColor: "bg-[#f59e0b]", title: "Bali 4 Hari 3 Malam", duration: "4 Hari 3 Malam", transport: "Pesawat", hotel: "Hotel ⭐ 4", price: "Rp 1.950.000", image: "https://images.unsplash.com/photo-1537996194494-10c920214fd5?q=80&w=600" },
-    { badge: "Promo", badgeColor: "bg-pink-500", title: "Yogyakarta 3 Hari 2 Malam", duration: "3 Hari 2 Malam", transport: "Kereta Api", hotel: "Hotel ⭐ 3", price: "Rp 1.250.000", image: "https://images.unsplash.com/photo-1584824486516-0555a07fc511?q=80&w=600" },
-    { badge: "New", badgeColor: "bg-blue-600", title: "Labuan Bajo 4 Hari 3 Malam", duration: "4 Hari 3 Malam", transport: "Kapal Phinisi floresHoliday", hotel: "Cabin AC", price: "Rp 3.950.000", image: "https://images.unsplash.com/photo-1516690553959-71a414d6b9b6?q=80&w=600" },
-    { badge: "Eksklusif", badgeColor: "bg-green-600", title: "Lombok 3 Hari 2 Malam", duration: "3 Hari 2 Malam", transport: "Pesawat", hotel: "Hotel ⭐ 4", price: "Rp 3.650.000", image: "https://images.unsplash.com/photo-1572059002053-8cc5ad2f4a38?q=80&w=600" }
-  ];
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "paket_domestik"));
+        setPackages(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPackages();
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
@@ -16,29 +29,51 @@ function DomestikPackages() {
           Lihat Semua Paket ➔
         </Link>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {packages.map((pkg, index) => (
-          <div key={index} className="bg-white rounded-2xl shadow hover:shadow-xl transition border border-gray-100 overflow-hidden flex flex-col group">
-            <div className="h-48 relative overflow-hidden">
-              <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-              <div className={`absolute top-4 left-4 text-white text-xs font-bold px-3 py-1 rounded-md shadow-md ${pkg.badgeColor}`}>{pkg.badge}</div>
-            </div>
-            <div className="p-5 flex-grow flex flex-col">
-              <h3 className="text-lg font-bold text-[#1e3a8a] mb-4">{pkg.title}</h3>
-              <div className="grid grid-cols-1 gap-y-2 text-sm text-gray-600 mb-6 flex-grow">
-                <div className="flex items-center gap-2"><span>📅</span> {pkg.duration}</div>
-                <div className="flex items-center gap-2"><span>🚢</span> {pkg.transport}</div>
-                <div className="flex items-center gap-2"><span>🏨</span> {pkg.hotel}</div>
+      
+      {loading ? (
+        <div className="text-center py-10 text-gray-500">Mengambil data paket domestik...</div>
+      ) : packages.length === 0 ? (
+        <div className="text-center py-10 text-gray-500">Belum ada paket domestik.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {packages.map((pkg) => (
+            <div key={pkg.id} className="bg-white rounded-2xl shadow hover:shadow-xl transition border border-gray-100 overflow-hidden flex flex-col group">
+              <div className="h-48 relative overflow-hidden">
+                <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                <div className={`absolute top-4 left-4 text-white text-xs font-bold px-3 py-1 rounded-md shadow-md ${pkg.badgeColor}`}>{pkg.badge}</div>
               </div>
-              <div className="border-t pt-4">
-                <span className="text-xs text-gray-500 block mb-1">Mulai dari</span>
-                <div className="text-[#f59e0b] font-bold text-xl mb-4">{pkg.price} <span className="text-sm text-gray-500 font-normal">/orang</span></div>
-                <button className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-semibold py-2.5 rounded-md transition">Lihat Detail</button>
+              <div className="p-5 flex-grow flex flex-col">
+                <h3 className="text-lg font-bold text-[#1e3a8a] mb-4">{pkg.title}</h3>
+                <div className="grid grid-cols-1 gap-y-2 text-sm text-gray-600 mb-6 flex-grow">
+                  <div className="flex items-center gap-2"><span>📅</span> {pkg.duration}</div>
+                  <div className="flex items-center gap-2"><span>🚢</span> {pkg.transport}</div>
+                  <div className="flex items-center gap-2"><span>🏨</span> {pkg.hotel}</div>
+                </div>
+                <div className="border-t pt-4">
+                  <span className="text-xs text-gray-500 block mb-1">Mulai dari</span>
+                  
+                  {/* Logika Pintar untuk Label Harga */}
+                  <div className="mb-4 space-y-1">
+                    {pkg.hargaOpenTrip && (
+                      <div className="text-[#f59e0b] font-bold text-lg">{pkg.hargaOpenTrip} <span className="text-sm text-gray-500 font-normal">/orang</span></div>
+                    )}
+                    {pkg.hargaPrivateTrip && (
+                      <div className="text-green-600 font-bold text-lg">{pkg.hargaPrivateTrip} <span className="text-sm text-gray-500 font-normal">/group</span></div>
+                    )}
+                    {!pkg.hargaOpenTrip && !pkg.hargaPrivateTrip && (
+                      <div className="text-[#f59e0b] font-bold text-lg">{pkg.price} <span className="text-sm text-gray-500 font-normal">/pax</span></div>
+                    )}
+                  </div>
+                  
+                  <Link to={`/paket/domestik/${pkg.id}`} className="block text-center w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-semibold py-2.5 rounded-md transition">
+  Lihat Detail
+</Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
