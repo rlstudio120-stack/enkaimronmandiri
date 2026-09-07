@@ -1,23 +1,44 @@
 import { useState, useEffect } from "react";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { db } from "../firebase";
 import { 
   LayoutDashboard, MapPin, Tent, LogOut, Plus, 
   Edit3, Trash2, X, CheckCircle, AlertTriangle, Info 
 } from "lucide-react";
 import JoditEditor from "jodit-react";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { db, auth } from "../firebase"; 
+import { signOut } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("umroh");
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      alert("Gagal keluar sistem.");
+    }
+  };
+
   const [dataList, setDataList] = useState([]);
-  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [customAlert, setCustomAlert] = useState({ show: false, message: "", type: "info", onConfirm: null });
 
-  const initialUmroh = { title: "", duration: "", airline: "", hotel: "", price: "", badge: "New", badgeColor: "bg-blue-600", image: "", jumlahUmroh: "", fasilitas: "", deskripsi: "" };
-  const initialDomestik = { title: "", duration: "", transport: "", hotel: "", hargaOpenTrip: "", hargaPrivateTrip: "", badge: "Eksklusif", badgeColor: "bg-green-600", image: "", deskripsi: "" };
+  const initialUmroh = { 
+    title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", 
+    pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", 
+    keretaCepat: "tidak", jumlahUmroh: "", tampilBadge: "ya", badge: "Reguler", badgeColor: "bg-blue-600", 
+    image: "", deskripsi: "", informasiTambahan: [] 
+  };
+  
+  const initialDomestik = { 
+    title: "", duration: "", transport: "", hotel: "", hargaOpenTrip: "", hargaPrivateTrip: "", 
+    badge: "Premium", badgeColor: "bg-purple-600", image: "", deskripsi: "", informasiTambahan: []
+  };
   
   const [formUmroh, setFormUmroh] = useState(initialUmroh);
   const [formDomestik, setFormDomestik] = useState(initialDomestik);
@@ -30,8 +51,61 @@ function AdminDashboard() {
     setDataList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
+  // --- FUNGSI FORMAT RUPIAH ---
+  const formatRupiah = (angka) => {
+    if (!angka) return "Rp 0";
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka);
+  };
+
   const handleUmrohChange = (e) => setFormUmroh({ ...formUmroh, [e.target.name]: e.target.value });
   const handleDomestikChange = (e) => setFormDomestik({ ...formDomestik, [e.target.name]: e.target.value });
+
+  const handleUmrohBadgeChange = (e) => {
+    const val = e.target.value;
+    let color = "bg-blue-600";
+    if (val === "Promo") color = "bg-red-600";
+    if (val === "Premium") color = "bg-purple-600";
+    if (val === "VIP") color = "bg-yellow-500";
+    setFormUmroh({ ...formUmroh, badge: val, badgeColor: color });
+  };
+
+  const handleDomestikBadgeChange = (e) => {
+    const val = e.target.value;
+    let color = "bg-blue-600";
+    if (val === "Promo") color = "bg-red-600";
+    if (val === "Premium") color = "bg-purple-600";
+    if (val === "VIP") color = "bg-yellow-500";
+    setFormDomestik({ ...formDomestik, badge: val, badgeColor: color });
+  };
+
+  const handleAddInfo = (type) => {
+    if (type === 'umroh') setFormUmroh({...formUmroh, informasiTambahan: [...(formUmroh.informasiTambahan || []), {judul: "", isi: ""}]});
+    else setFormDomestik({...formDomestik, informasiTambahan: [...(formDomestik.informasiTambahan || []), {judul: "", isi: ""}]});
+  };
+
+  const handleRemoveInfo = (type, index) => {
+    if (type === 'umroh') {
+      const newArr = [...formUmroh.informasiTambahan];
+      newArr.splice(index, 1);
+      setFormUmroh({...formUmroh, informasiTambahan: newArr});
+    } else {
+      const newArr = [...formDomestik.informasiTambahan];
+      newArr.splice(index, 1);
+      setFormDomestik({...formDomestik, informasiTambahan: newArr});
+    }
+  };
+
+  const handleUpdateInfo = (type, index, field, value) => {
+    if (type === 'umroh') {
+      const newArr = [...formUmroh.informasiTambahan];
+      newArr[index][field] = value;
+      setFormUmroh({...formUmroh, informasiTambahan: newArr});
+    } else {
+      const newArr = [...formDomestik.informasiTambahan];
+      newArr[index][field] = value;
+      setFormDomestik({...formDomestik, informasiTambahan: newArr});
+    }
+  };
 
   const showAlert = (message, type = "info", onConfirm = null) => setCustomAlert({ show: true, message, type, onConfirm });
   const closeAlert = () => setCustomAlert({ show: false, message: "", type: "info", onConfirm: null });
@@ -44,137 +118,119 @@ function AdminDashboard() {
 
   const openEditModal = (item) => {
     setEditId(item.id);
-    activeTab === "umroh" ? setFormUmroh(item) : setFormDomestik(item);
+    activeTab === "umroh" ? setFormUmroh({...initialUmroh, ...item}) : setFormDomestik({...initialDomestik, ...item});
     setIsFormOpen(true);
+  };
+
+  const joditConfig = { height: 300, askBeforePasteHTML: false, askBeforePasteFromWord: false, defaultActionOnPaste: "insert_as_html" };
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const IMGBB_API_KEY = "268adcfe4ba6f66170f40d0e3fdda6ae";
+    setIsUploading(true);
+    setUploadProgress(50); 
+    const formData = new FormData();
+    formData.append("image", file);
+    try {
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+      const data = await response.json();
+      if (data.success) {
+        if (activeTab === "umroh") setFormUmroh({ ...formUmroh, image: data.data.url });
+        else setFormDomestik({ ...formDomestik, image: data.data.url });
+        setUploadProgress(100);
+      } else alert("Gagal mengunggah gambar ke server.");
+    } catch (error) { alert("Terjadi kesalahan jaringan saat mengunggah."); } 
+    finally { setTimeout(() => { setIsUploading(false); setUploadProgress(0); }, 1000); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     const colName = activeTab === "umroh" ? "paket_umroh" : "paket_domestik";
-    const dataToSave = activeTab === "umroh" 
-      ? formUmroh 
-      : { ...formDomestik, price: formDomestik.hargaOpenTrip || formDomestik.hargaPrivateTrip || formDomestik.price };
-
+    const dataToSave = activeTab === "umroh" ? formUmroh : { ...formDomestik, price: formDomestik.hargaOpenTrip || formDomestik.hargaPrivateTrip || formDomestik.price };
     try {
-      if (editId) {
-        await updateDoc(doc(db, colName, editId), dataToSave);
-        showAlert("Data paket berhasil diperbarui.", "success");
-      } else {
-        await addDoc(collection(db, colName), dataToSave);
-        showAlert("Paket baru berhasil ditambahkan.", "success");
-      }
-      setIsFormOpen(false);
-      fetchData();
-    } catch (error) {
-      showAlert("Gagal menyimpan data. Periksa koneksi Anda.", "error");
-    } finally {
-      setIsSubmitting(false);
-    }
+      if (editId) { await updateDoc(doc(db, colName, editId), dataToSave); showAlert("Data diperbarui.", "success"); } 
+      else { await addDoc(collection(db, colName), dataToSave); showAlert("Paket ditambahkan.", "success"); }
+      setIsFormOpen(false); fetchData();
+    } catch (error) { showAlert("Gagal menyimpan data.", "error"); } 
+    finally { setIsSubmitting(false); }
   };
 
   const confirmDelete = (id) => {
-    showAlert("Yakin ingin menghapus paket ini? Tindakan ini tidak dapat dibatalkan.", "confirm", async () => {
-      const colName = activeTab === "umroh" ? "paket_umroh" : "paket_domestik";
-      await deleteDoc(doc(db, colName, id));
-      fetchData();
-      showAlert("Paket berhasil dihapus.", "success");
+    showAlert("Yakin ingin menghapus?", "confirm", async () => {
+      await deleteDoc(doc(db, activeTab === "umroh" ? "paket_umroh" : "paket_domestik", id));
+      fetchData(); showAlert("Dihapus.", "success");
     });
   };
 
+  // --- KELAS CSS STANDAR UNTUK FORM (LEMBUT & ELEGAN) ---
+  const inputClass = "w-full border border-gray-200 p-3 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition text-sm";
+  const labelClass = "text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide";
 
   return (
     <div className="flex h-screen bg-[#f8fafc] font-sans selection:bg-blue-100">
       
-      {/* Sidebar Elegan */}
-      <div className="w-72 bg-[#0f172a] text-white flex flex-col shadow-2xl z-20 relative">
-        <div className="p-8 flex items-center gap-3 border-b border-slate-800">
-          <div className="bg-blue-600 p-2 rounded-lg"><LayoutDashboard size={24} className="text-white"/></div>
-          <div>
-            <h2 className="text-lg font-bold tracking-wide">Workspace</h2>
-            <p className="text-xs text-slate-400">Enka Imron Mandiri</p>
-          </div>
+      {/* Sidebar Elegan (Teks Diperkecil) */}
+      <div className="w-64 bg-[#0f172a] text-white flex flex-col shadow-2xl z-20 relative">
+        <div className="p-6 flex items-center gap-3 border-b border-slate-800">
+          <div className="bg-blue-600 p-2 rounded-lg"><LayoutDashboard size={20} className="text-white"/></div>
+          <div><h2 className="text-base font-bold tracking-wide">Workspace</h2><p className="text-[10px] text-slate-400">Enka Imron Mandiri</p></div>
         </div>
-        
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Manajemen Paket</p>
-          <button onClick={() => setActiveTab("umroh")} className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${activeTab === "umroh" ? "bg-blue-600 text-white shadow-md shadow-blue-900/20" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`}>
-            <Tent size={20} />
-            <span className="font-medium">Paket Umroh</span>
+        <nav className="flex-1 px-3 py-6 space-y-1">
+          <p className="px-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Manajemen Paket</p>
+          <button onClick={() => setActiveTab("umroh")} className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 ${activeTab === "umroh" ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
+            <Tent size={18} /><span className="text-sm font-medium">Paket Umroh</span>
           </button>
-          <button onClick={() => setActiveTab("domestik")} className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${activeTab === "domestik" ? "bg-blue-600 text-white shadow-md shadow-blue-900/20" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`}>
-            <MapPin size={20} />
-            <span className="font-medium">Paket Domestik</span>
+          <button onClick={() => setActiveTab("domestik")} className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 ${activeTab === "domestik" ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
+            <MapPin size={18} /><span className="text-sm font-medium">Paket Domestik</span>
           </button>
         </nav>
-
-        <div className="p-6 border-t border-slate-800">
-          <button className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 py-3 rounded-xl transition">
-            <LogOut size={18} />
-            <span className="font-medium text-sm">Keluar Sistem</span>
+        <div className="p-4 border-t border-slate-800">
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 py-2 rounded-lg transition">
+            <LogOut size={16} /><span className="text-sm font-medium">Keluar Sistem</span>
           </button>
         </div>
       </div>
 
-      {/* Area Konten Utama */}
+      {/* Konten Utama */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        
-        {/* Header (Top Bar) */}
         <header className="bg-white border-b border-gray-100 px-8 py-5 flex justify-between items-center z-10 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {activeTab === "umroh" ? "Daftar Paket Umroh" : "Daftar Paket Domestik"}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">Kelola informasi paket perjalanan yang tampil di website utama.</p>
-          </div>
-          <button onClick={openAddModal} className="bg-[#1e3a8a] hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg font-medium shadow-md shadow-blue-900/10 transition-all flex items-center gap-2">
-            <Plus size={18} />
-            Tambah Paket
-          </button>
+          <div><h1 className="text-2xl font-bold text-gray-800">{activeTab === "umroh" ? "Daftar Paket Umroh" : "Daftar Paket Domestik"}</h1></div>
+          <button onClick={openAddModal} className="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-blue-800 transition"><Plus size={18} />Tambah Paket</button>
         </header>
 
-        {/* Area Tabel */}
         <div className="flex-1 p-8 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100/50 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
-                  <th className="px-6 py-4 border-b font-semibold">Visual</th>
-                  <th className="px-6 py-4 border-b font-semibold">Informasi Paket</th>
-                  <th className="px-6 py-4 border-b font-semibold">Harga</th>
-                  <th className="px-6 py-4 border-b font-semibold text-right">Aksi</th>
+                <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
+                  <th className="px-6 py-4 font-semibold">Visual</th>
+                  <th className="px-6 py-4 font-semibold">Informasi Paket</th>
+                  <th className="px-6 py-4 font-semibold">Harga Mulai</th>
+                  <th className="px-6 py-4 font-semibold text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {dataList.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4 w-24">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                      </div>
-                    </td>
+                  <tr key={item.id} className="hover:bg-blue-50/30 transition group">
+                    <td className="px-6 py-4 w-24"><img src={item.image} alt={item.title} className="w-16 h-16 rounded-xl object-cover border border-gray-100" /></td>
                     <td className="px-6 py-4">
                       <div className="font-bold text-gray-800 text-base mb-1">{item.title}</div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span className="bg-gray-100 px-2 py-1 rounded-md">{item.duration}</span>
-                        {item.airline && <span>✈️ {item.airline}</span>}
-                        {item.transport && <span>🚢 {item.transport}</span>}
-                      </div>
+                      <div className="text-xs text-gray-500 flex gap-3"><span className="bg-slate-100 px-2 py-0.5 rounded">{item.duration}</span></div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-800">
-                        {item.hargaOpenTrip || item.hargaPrivateTrip || item.price}
-                      </div>
+                      {/* HARGA TAMPIL FORMAT RUPIAH */}
+                      <span className="font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg">
+                        {formatRupiah(item.hargaOpenTrip || item.hargaPrivateTrip || item.price)}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => openEditModal(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors tooltip" title="Edit">
-                          <Edit3 size={18} />
-                        </button>
-                        <button onClick={() => confirmDelete(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                      <button onClick={() => openEditModal(item)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition mr-1"><Edit3 size={18} /></button>
+                      <button onClick={() => confirmDelete(item.id)} className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition"><Trash2 size={18} /></button>
                     </td>
                   </tr>
                 ))}
@@ -182,8 +238,8 @@ function AdminDashboard() {
             </table>
             {dataList.length === 0 && (
               <div className="py-20 flex flex-col items-center justify-center text-gray-400">
-                <Info size={48} className="mb-4 opacity-50" />
-                <p className="text-lg">Belum ada data yang ditambahkan.</p>
+                <Info size={40} className="mb-3 opacity-30" />
+                <p className="text-sm">Belum ada paket yang ditambahkan.</p>
               </div>
             )}
           </div>
@@ -192,100 +248,172 @@ function AdminDashboard() {
 
       {/* MODAL FORM */}
       {isFormOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-all">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="px-8 py-6 border-b flex justify-between items-center bg-white">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                {editId ? <Edit3 className="text-blue-600"/> : <Plus className="text-blue-600"/>}
-                {editId ? "Perbarui Data Paket" : "Tambah Paket Baru"}
-              </h2>
-              <button onClick={() => setIsFormOpen(false)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><X size={20}/></button>
+        <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+              <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800"><Edit3 className="text-blue-600"/>{editId ? 'Perbarui Data Paket' : 'Tambah Paket Baru'}</h2>
+              <button onClick={() => setIsFormOpen(false)} className="text-gray-400 hover:text-red-500 transition"><X size={24}/></button>
             </div>
             
-            <div className="p-8 overflow-y-auto bg-slate-50/50">
-              <form id="paketForm" onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
+            <div className="p-8 overflow-y-auto bg-slate-50">
+              <form id="paketForm" onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+                
                 {activeTab === "umroh" ? (
-                  <>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Nama Paket</label><input required type="text" name="title" value={formUmroh.title} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Harga</label><input required type="text" name="price" value={formUmroh.price} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Durasi</label><input required type="text" name="duration" value={formUmroh.duration} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Maskapai</label><input required type="text" name="airline" value={formUmroh.airline} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Hotel</label><input required type="text" name="hotel" value={formUmroh.hotel} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Jml Umroh <span className="normal-case font-normal text-gray-400">(Opsional)</span></label><input type="text" name="jumlahUmroh" value={formUmroh.jumlahUmroh} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col col-span-2"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">URL Gambar</label><input required type="text" name="image" value={formUmroh.image} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col col-span-2">
-                      <label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Deskripsi Lengkap & Itinerary</label>
-                      <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
-                        <JoditEditor
-                          value={formUmroh.deskripsi}
-                          config={{ height: 400, placeholder: 'Ketik deskripsi, itinerary, atau buat tabel di sini...' }}
-                          onBlur={(newContent) => setFormUmroh({ ...formUmroh, deskripsi: newContent })}
-                        />
+                  <div className="col-span-2 flex flex-col gap-6">
+                    {/* Basic Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col"><label className={labelClass}>Nama Paket</label>
+                        <input type="text" name="title" value={formUmroh.title} onChange={handleUmrohChange} className={inputClass} placeholder="Contoh: Paket Umroh Plus Turki" required />
+                      </div>
+                      <div className="flex flex-col"><label className={labelClass}>Harga (Rp)</label>
+                        <input type="number" name="price" value={formUmroh.price} onChange={handleUmrohChange} className={inputClass} placeholder="Contoh: 35000000" required />
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Nama Destinasi</label><input required type="text" name="title" value={formDomestik.title} onChange={handleDomestikChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Durasi</label><input required type="text" name="duration" value={formDomestik.duration} onChange={handleDomestikChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Transportasi</label><input required type="text" name="transport" value={formDomestik.transport} onChange={handleDomestikChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Penginapan</label><input required type="text" name="hotel" value={formDomestik.hotel} onChange={handleDomestikChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide text-blue-600">Harga Open Trip</label><input type="text" name="hargaOpenTrip" value={formDomestik.hargaOpenTrip} onChange={handleDomestikChange} className="border border-blue-100 bg-blue-50/30 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"/></div>
-                    <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide text-green-600">Harga Private Trip</label><input type="text" name="hargaPrivateTrip" value={formDomestik.hargaPrivateTrip} onChange={handleDomestikChange} className="border border-green-100 bg-green-50/30 p-3 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition"/></div>
-                    <div className="flex flex-col col-span-2"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">URL Gambar</label><input required type="text" name="image" value={formDomestik.image} onChange={handleDomestikChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
-                    <div className="flex flex-col col-span-2">
-                      <label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Deskripsi Lengkap & Itinerary</label>
-                      <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
-                        <JoditEditor
-                          value={formDomestik.deskripsi}
-                          config={{ height: 400, placeholder: 'Ketik deskripsi, itinerary, atau buat tabel di sini...' }}
-                          onBlur={(newContent) => setFormDomestik({ ...formDomestik, deskripsi: newContent })}
-                        />
+
+                    {/* Waktu & Durasi */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                      <div className="flex flex-col"><label className={labelClass}>Format Waktu</label>
+                        <select name="tipeWaktu" value={formUmroh.tipeWaktu} onChange={handleUmrohChange} className={inputClass}>
+                          <option value="bulan">Berupa Bulan Saja</option><option value="tanggal">Berupa Tanggal Pasti</option>
+                        </select>
                       </div>
-                    </div>                  
-                  </>
+                      <div className="flex flex-col"><label className={labelClass}>Isi Waktu</label>
+                        <input type={formUmroh.tipeWaktu==='bulan'?'text':'date'} name="waktuInfo" value={formUmroh.waktuInfo} onChange={handleUmrohChange} className={inputClass} placeholder={formUmroh.tipeWaktu==='bulan' ? "Contoh: Januari 2027" : ""} />
+                      </div>
+                      <div className="flex flex-col"><label className={labelClass}>Durasi</label>
+                        <input type="text" name="duration" value={formUmroh.duration} onChange={handleUmrohChange} className={inputClass} placeholder="Contoh: 13 Hari" />
+                      </div>
+                      <div className="flex flex-col"><label className={labelClass}>Maskapai</label>
+                        <input type="text" name="maskapai" value={formUmroh.maskapai} onChange={handleUmrohChange} className={inputClass} placeholder="Contoh: Saudia Airlines" />
+                      </div>
+                    </div>
+
+                    {/* Akomodasi Hotel & Kereta */}
+                    <div className="bg-white p-5 rounded-2xl border border-blue-100 flex flex-col gap-5 shadow-sm">
+                      <div className="flex items-center gap-4 border-b border-gray-100 pb-3">
+                        <label className="text-sm font-bold text-blue-900">Tampilkan Nama Hotel Secara Spesifik?</label>
+                        <select name="pakaiNamaHotel" value={formUmroh.pakaiNamaHotel} onChange={handleUmrohChange} className="border border-gray-200 py-1.5 px-3 rounded-lg bg-slate-50 text-sm focus:outline-none">
+                          <option value="ya">Ya, Tampilkan</option><option value="tidak">Tidak, Sembunyikan</option>
+                        </select>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="flex flex-col">
+                          <label className={labelClass}>Nama Hotel Mekah</label>
+                          <input type="text" name="hotelMekah" value={formUmroh.hotelMekah} onChange={handleUmrohChange} disabled={formUmroh.pakaiNamaHotel === 'tidak'} placeholder="Contoh: Pullman ZamZam" 
+                          className={`w-full border border-gray-200 p-3 rounded-xl text-sm transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-100' : 'bg-slate-50 focus:bg-white focus:border-blue-400 outline-none'}`}/>
+                        </div>
+                        <div className="flex flex-col">
+                          <label className={labelClass}>Bintang Hotel Mekah</label>
+                          <select name="bintangMekah" value={formUmroh.bintangMekah} onChange={handleUmrohChange} className={inputClass}>
+                            <option value="5">⭐⭐⭐⭐⭐ (Bintang 5)</option><option value="4">⭐⭐⭐⭐ (Bintang 4)</option><option value="3">⭐⭐⭐ (Bintang 3)</option><option value="2">⭐⭐ (Bintang 2)</option><option value="1">⭐ (Bintang 1)</option>
+                          </select>
+                        </div>
+                        
+                        <div className="flex flex-col">
+                          <label className={labelClass}>Nama Hotel Madinah</label>
+                          <input type="text" name="hotelMadinah" value={formUmroh.hotelMadinah} onChange={handleUmrohChange} disabled={formUmroh.pakaiNamaHotel === 'tidak'} placeholder="Contoh: Anwar Al Madinah" 
+                          className={`w-full border border-gray-200 p-3 rounded-xl text-sm transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-100' : 'bg-slate-50 focus:bg-white focus:border-blue-400 outline-none'}`}/>
+                        </div>
+                        <div className="flex flex-col">
+                          <label className={labelClass}>Bintang Hotel Madinah</label>
+                          <select name="bintangMadinah" value={formUmroh.bintangMadinah} onChange={handleUmrohChange} className={inputClass}>
+                            <option value="5">⭐⭐⭐⭐⭐ (Bintang 5)</option><option value="4">⭐⭐⭐⭐ (Bintang 4)</option><option value="3">⭐⭐⭐ (Bintang 3)</option><option value="2">⭐⭐ (Bintang 2)</option><option value="1">⭐ (Bintang 1)</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t border-gray-100 pt-4">
+                        <label className={labelClass}>Fasilitas Kereta Cepat Haramain?</label>
+                        <select name="keretaCepat" value={formUmroh.keretaCepat} onChange={handleUmrohChange} className={inputClass}>
+                          <option value="tidak">Tidak Tersedia</option><option value="ya">Ya, Termasuk Kereta Cepat Haramain</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Badge & Upload */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label>
+                        <select value={formUmroh.badge} onChange={handleUmrohBadgeChange} className={inputClass}>
+                          <option value="Reguler">Reguler (Warna Biru)</option>
+                          <option value="Promo">Promo (Warna Merah)</option>
+                          <option value="Premium">Premium (Warna Ungu)</option>
+                          <option value="VIP">VIP (Warna Kuning)</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover</label>
+                        <input type="file" onChange={handleImageUpload} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700"/>
+                        {isUploading && <p className="text-xs text-blue-600 mt-2">Mengunggah: {Math.round(uploadProgress)}%</p>}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="flex flex-col"><label className={labelClass}>Nama Destinasi</label><input type="text" name="title" value={formDomestik.title} onChange={handleDomestikChange} placeholder="Contoh: Explore Labuan Bajo" className={inputClass} required/></div>
+                    <div className="flex flex-col"><label className={labelClass}>Durasi</label><input type="text" name="duration" value={formDomestik.duration} onChange={handleDomestikChange} placeholder="Contoh: 3 Hari 2 Malam" className={inputClass}/></div>
+                    <div className="flex flex-col"><label className={labelClass}>Harga Open Trip (Rp)</label><input type="number" name="hargaOpenTrip" value={formDomestik.hargaOpenTrip} onChange={handleDomestikChange} placeholder="Contoh: 2500000" className={inputClass} required/></div>
+                    <div className="flex flex-col"><label className={labelClass}>Harga Private Trip (Rp)</label><input type="number" name="hargaPrivateTrip" value={formDomestik.hargaPrivateTrip} onChange={handleDomestikChange} placeholder="Contoh: 3500000" className={inputClass}/></div>
+                    <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label>
+                      <select value={formDomestik.badge} onChange={handleDomestikBadgeChange} className={inputClass}>
+                        <option value="Reguler">Reguler (Warna Biru)</option><option value="Promo">Promo (Warna Merah)</option><option value="Premium">Premium (Warna Ungu)</option><option value="VIP">VIP (Warna Kuning)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover</label>
+                      <input type="file" onChange={handleImageUpload} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700"/>
+                    </div>
+                  </div>
                 )}
+                
+                {/* 8. DESKRIPSI UTAMA & ACCORDION */}
+                <div className="col-span-2 border-t border-gray-200 pt-6 mt-2">
+                  <h3 className="font-bold text-gray-800 mb-3 text-sm uppercase">Deskripsi & Informasi Utama</h3>
+                  <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                    <JoditEditor value={activeTab === 'umroh' ? formUmroh.deskripsi : formDomestik.deskripsi} config={joditConfig} onBlur={(c) => activeTab === 'umroh' ? setFormUmroh({...formUmroh, deskripsi: c}) : setFormDomestik({...formDomestik, deskripsi: c})} />
+                  </div>
+                  
+                  <div className="flex justify-between items-center mt-8 mb-4 border-b border-gray-200 pb-3">
+                    <label className="text-sm font-bold text-gray-800 uppercase">Informasi Tambahan (Buka-Tutup)</label>
+                    <button type="button" onClick={() => handleAddInfo(activeTab)} className="bg-blue-50 hover:bg-blue-100 transition text-blue-700 px-4 py-2 rounded-lg text-xs font-bold flex gap-2"><Plus size={16}/> Tambah Judul Baru</button>
+                  </div>
+                  
+                  {((activeTab === 'umroh' ? formUmroh : formDomestik).informasiTambahan || []).map((info, index) => (
+                    <div key={index} className="border border-gray-200 rounded-2xl p-5 mb-5 bg-white shadow-sm relative">
+                      <button type="button" onClick={() => handleRemoveInfo(activeTab, index)} className="absolute top-5 right-5 text-red-400 hover:text-red-600 transition"><Trash2 size={18}/></button>
+                      <input type="text" value={info.judul} onChange={(e) => handleUpdateInfo(activeTab, index, 'judul', e.target.value)} className="border border-gray-200 p-3 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-400 outline-none w-full mb-4 pr-12 text-sm font-semibold" placeholder="Contoh Judul: Itinerary Perjalanan, Syarat Dokumen..." />
+                      <div className="rounded-xl overflow-hidden border border-gray-200">
+                        <JoditEditor value={info.isi} config={{...joditConfig, height: 250}} onBlur={(c) => handleUpdateInfo(activeTab, index, 'isi', c)} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </form>
             </div>
             
-            <div className="px-8 py-5 border-t bg-white flex justify-end gap-3">
-              <button onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition">Batal</button>
-              <button form="paketForm" type="submit" disabled={isSubmitting} className={`px-6 py-2.5 text-white font-medium rounded-xl transition shadow-md flex items-center gap-2 ${isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"}`}>
-                {isSubmitting ? "Menyimpan..." : (editId ? "Simpan Perubahan" : "Simpan Paket")}
-              </button>
+            <div className="px-8 py-5 border-t border-gray-100 bg-white flex justify-end gap-3">
+              <button onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium rounded-xl transition text-sm">Batal</button>
+              <button form="paketForm" type="submit" disabled={isSubmitting || isUploading} className="px-6 py-2.5 bg-[#1e3a8a] hover:bg-blue-800 text-white font-medium rounded-xl transition shadow-md text-sm">Simpan Data Paket</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL ALERT / CONFIRM */}
+      {/* MODAL ALERT */}
       {customAlert.show && (
-        <div className="fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center">
-            <div className="flex justify-center mb-5">
-              {customAlert.type === "success" && <div className="bg-green-100 p-3 rounded-full text-green-600"><CheckCircle size={32} /></div>}
-              {customAlert.type === "error" && <div className="bg-red-100 p-3 rounded-full text-red-600"><X size={32} /></div>}
-              {customAlert.type === "confirm" && <div className="bg-amber-100 p-3 rounded-full text-amber-600"><AlertTriangle size={32} /></div>}
-            </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
-              {customAlert.type === "confirm" ? "Konfirmasi Hapus" : "Informasi"}
-            </h3>
-            <p className="text-gray-500 mb-8">{customAlert.message}</p>
-            
+        <div className="fixed inset-0 bg-slate-900/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-8 text-center shadow-2xl">
+            <h3 className="text-xl font-bold mb-2 text-gray-800">{customAlert.type === "confirm" ? "Konfirmasi Hapus" : "Informasi"}</h3>
+            <p className="text-gray-500 mb-8 text-sm">{customAlert.message}</p>
             <div className="flex justify-center gap-3">
               {customAlert.type === "confirm" ? (
-                <>
-                  <button onClick={closeAlert} className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition">Batal</button>
-                  <button onClick={() => { customAlert.onConfirm(); closeAlert(); }} className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition shadow-md shadow-red-500/20">Ya, Hapus</button>
-                </>
+                <><button onClick={closeAlert} className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium">Batal</button>
+                <button onClick={() => { customAlert.onConfirm(); closeAlert(); }} className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium shadow-md">Ya, Hapus</button></>
               ) : (
-                <button onClick={closeAlert} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition shadow-md shadow-blue-600/20">Mengerti</button>
+                <button onClick={closeAlert} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium">Mengerti</button>
               )}
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

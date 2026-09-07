@@ -1,13 +1,20 @@
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+
+// Import Komponen Halaman
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./components/Home";
 import Umroh from "./components/Umroh";
 import Domestik from "./components/Domestik";
-import AdminDashboard from "./components/AdminDashboard";
 import PackageDetail from "./components/PackageDetail";
+import AdminDashboard from "./components/AdminDashboard";
+import Login from "./components/Login";
 
-// 1. Membuat Wadah untuk Halaman Publik (yang butuh Navbar & Footer)
+// --- WADAH AREA PUBLIK ---
+// Mengembalikan Navbar dan Footer yang sebelumnya hilang
 function PublicLayout() {
   return (
     <>
@@ -20,12 +27,33 @@ function PublicLayout() {
   );
 }
 
+// --- KOMPONEN PELINDUNG (PROTECTED ROUTE) ---
+const ProtectedRoute = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) return <div className="h-screen flex items-center justify-center text-xl font-bold text-[#1e3a8a]">Memuat Sistem Keamanan...</div>;
+  
+  if (!user) return <Navigate to="/login" replace />;
+  
+  return children;
+};
+
+// --- APLIKASI UTAMA ---
 function App() {
   return (
-    // 2. Membungkus seluruh aplikasi dengan BrowserRouter
-    <BrowserRouter>
+    <Router>
       <Routes>
-        {/* Kelompok Halaman Publik */}
+        
+        {/* === AREA PUBLIK === */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/umroh" element={<Umroh />} />
@@ -33,10 +61,21 @@ function App() {
           <Route path="/paket/:type/:id" element={<PackageDetail />} />
         </Route>
 
-        {/* Halaman Admin (Berdiri Sendiri, Tanpa Navbar/Footer) */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        {/* === AREA LOGIN === */}
+        <Route path="/login" element={<Login />} />
+
+        {/* === AREA ADMIN TERLINDUNGI === */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
