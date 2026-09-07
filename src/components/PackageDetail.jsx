@@ -66,9 +66,15 @@ function PackageDetail() {
             </div>
 
             <h2 className="text-2xl font-bold text-[#1e3a8a] mb-4 border-b pb-2">Deskripsi Lengkap</h2>
-            <p className="text-gray-600 leading-relaxed mb-6">
-              *(Nantinya kita bisa menambahkan fitur editor teks di Halaman Admin agar Anda bisa mengetik Itinerary Harian atau Syarat & Ketentuan lengkap di bagian ini secara dinamis).*
-            </p>
+              {/* Render HTML secara aman dari database */}
+              {paket.deskripsi ? (
+                <div 
+                  className="text-gray-600 leading-relaxed mb-6 space-y-3 [&>ul]:list-disc [&>ul]:ml-5 [&>ol]:list-decimal [&>ol]:ml-5 [&>h1]:text-2xl [&>h1]:font-bold [&>h2]:text-xl [&>h2]:font-bold [&>strong]:text-gray-800"
+                  dangerouslySetInnerHTML={{ __html: paket.deskripsi }} 
+                />
+              ) : (
+                <p className="text-gray-500 italic mb-6">Detail itinerary dan syarat pendaftaran belum ditambahkan untuk paket ini.</p>
+              )}
           </div>
 
           {/* Kolom Kanan: Harga & Booking */}

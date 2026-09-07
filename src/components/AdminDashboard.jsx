@@ -5,6 +5,7 @@ import {
   LayoutDashboard, MapPin, Tent, LogOut, Plus, 
   Edit3, Trash2, X, CheckCircle, AlertTriangle, Info 
 } from "lucide-react";
+import JoditEditor from "jodit-react";
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("umroh");
@@ -15,8 +16,8 @@ function AdminDashboard() {
   const [editId, setEditId] = useState(null);
   const [customAlert, setCustomAlert] = useState({ show: false, message: "", type: "info", onConfirm: null });
 
-  const initialUmroh = { title: "", duration: "", airline: "", hotel: "", price: "", badge: "New", badgeColor: "bg-blue-600", image: "", jumlahUmroh: "", fasilitas: "" };
-  const initialDomestik = { title: "", duration: "", transport: "", hotel: "", hargaOpenTrip: "", hargaPrivateTrip: "", badge: "Eksklusif", badgeColor: "bg-green-600", image: "" };
+  const initialUmroh = { title: "", duration: "", airline: "", hotel: "", price: "", badge: "New", badgeColor: "bg-blue-600", image: "", jumlahUmroh: "", fasilitas: "", deskripsi: "" };
+  const initialDomestik = { title: "", duration: "", transport: "", hotel: "", hargaOpenTrip: "", hargaPrivateTrip: "", badge: "Eksklusif", badgeColor: "bg-green-600", image: "", deskripsi: "" };
   
   const [formUmroh, setFormUmroh] = useState(initialUmroh);
   const [formDomestik, setFormDomestik] = useState(initialDomestik);
@@ -80,6 +81,7 @@ function AdminDashboard() {
       showAlert("Paket berhasil dihapus.", "success");
     });
   };
+
 
   return (
     <div className="flex h-screen bg-[#f8fafc] font-sans selection:bg-blue-100">
@@ -211,6 +213,16 @@ function AdminDashboard() {
                     <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Hotel</label><input required type="text" name="hotel" value={formUmroh.hotel} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
                     <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Jml Umroh <span className="normal-case font-normal text-gray-400">(Opsional)</span></label><input type="text" name="jumlahUmroh" value={formUmroh.jumlahUmroh} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
                     <div className="flex flex-col col-span-2"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">URL Gambar</label><input required type="text" name="image" value={formUmroh.image} onChange={handleUmrohChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
+                    <div className="flex flex-col col-span-2">
+                      <label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Deskripsi Lengkap & Itinerary</label>
+                      <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                        <JoditEditor
+                          value={formUmroh.deskripsi}
+                          config={{ height: 400, placeholder: 'Ketik deskripsi, itinerary, atau buat tabel di sini...' }}
+                          onBlur={(newContent) => setFormUmroh({ ...formUmroh, deskripsi: newContent })}
+                        />
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -221,6 +233,16 @@ function AdminDashboard() {
                     <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide text-blue-600">Harga Open Trip</label><input type="text" name="hargaOpenTrip" value={formDomestik.hargaOpenTrip} onChange={handleDomestikChange} className="border border-blue-100 bg-blue-50/30 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"/></div>
                     <div className="flex flex-col"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide text-green-600">Harga Private Trip</label><input type="text" name="hargaPrivateTrip" value={formDomestik.hargaPrivateTrip} onChange={handleDomestikChange} className="border border-green-100 bg-green-50/30 p-3 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition"/></div>
                     <div className="flex flex-col col-span-2"><label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">URL Gambar</label><input required type="text" name="image" value={formDomestik.image} onChange={handleDomestikChange} className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition bg-white"/></div>
+                    <div className="flex flex-col col-span-2">
+                      <label className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Deskripsi Lengkap & Itinerary</label>
+                      <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                        <JoditEditor
+                          value={formDomestik.deskripsi}
+                          config={{ height: 400, placeholder: 'Ketik deskripsi, itinerary, atau buat tabel di sini...' }}
+                          onBlur={(newContent) => setFormDomestik({ ...formDomestik, deskripsi: newContent })}
+                        />
+                      </div>
+                    </div>                  
                   </>
                 )}
               </form>
