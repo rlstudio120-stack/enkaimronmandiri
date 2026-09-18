@@ -13,6 +13,8 @@ import PackageDetail from "./components/PackageDetail";
 import AdminDashboard from "./components/AdminDashboard";
 import Login from "./components/Login";
 import DomestikDaerah from "./components/DomestikDaerah";
+import News from "./components/News"; // Sesuaikan folder Anda
+import NewsDetail from "./components/NewsDetail"; // Sesuaikan folder Anda
 
 // --- WADAH AREA PUBLIK ---
 // Mengembalikan Navbar dan Footer yang sebelumnya hilang
@@ -61,6 +63,8 @@ function App() {
           <Route path="/domestik" element={<Domestik />} />
           <Route path="/paket/:type/:id" element={<PackageDetail />} />
           <Route path="/domestik/daerah/:namaDaerah" element={<DomestikDaerah />} />
+          <Route path="/berita" element={<News />} />
+          <Route path="/berita/:id" element={<NewsDetail />} />
         </Route>
 
         {/* === AREA LOGIN === */}
