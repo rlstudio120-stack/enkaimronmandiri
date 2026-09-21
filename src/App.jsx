@@ -10,14 +10,14 @@ import Home from "./components/Home";
 import Umroh from "./components/Umroh";
 import Domestik from "./components/Domestik";
 import PackageDetail from "./components/PackageDetail";
+import DetailDomestik from "./components/DetailDomestik"; // <-- IMPORT HALAMAN BARU DOMESTIK
 import AdminDashboard from "./components/AdminDashboard";
 import Login from "./components/Login";
 import DomestikDaerah from "./components/DomestikDaerah";
-import News from "./components/News"; // Sesuaikan folder Anda
-import NewsDetail from "./components/NewsDetail"; // Sesuaikan folder Anda
+import News from "./components/News"; 
+import NewsDetail from "./components/NewsDetail"; 
 
 // --- WADAH AREA PUBLIK ---
-// Mengembalikan Navbar dan Footer yang sebelumnya hilang
 function PublicLayout() {
   return (
     <>
@@ -61,7 +61,13 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/umroh" element={<Umroh />} />
           <Route path="/domestik" element={<Domestik />} />
+          
+          {/* RUTE PAKET DOMESTIK BARU */}
+          <Route path="/paket/domestik/:id" element={<DetailDomestik />} />
+          
+          {/* RUTE PAKET UMUM (Umroh/Internasional) */}
           <Route path="/paket/:type/:id" element={<PackageDetail />} />
+          
           <Route path="/domestik/daerah/:namaDaerah" element={<DomestikDaerah />} />
           <Route path="/berita" element={<News />} />
           <Route path="/berita/:id" element={<NewsDetail />} />
