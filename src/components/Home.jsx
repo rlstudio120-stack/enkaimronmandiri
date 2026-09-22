@@ -121,9 +121,9 @@ function Home() {
       {/* 2. KOTAK PENCARIAN */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-20 md:-mt-16 mb-16 md:mb-20">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="flex bg-[#2563eb]">
+          <div className="flex bg-[#1e3a8a]">
             {["Domestik", "Internasional", "Umroh"].map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3.5 md:py-4 text-xs md:text-base font-bold flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 transition-colors ${activeTab === tab ? "bg-white text-[#1e3a8a] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 relative" : "bg-[#2563eb] text-white hover:bg-[#1d4ed8]"}`}>
+              <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3.5 md:py-4 text-xs md:text-base font-bold flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 transition-colors ${activeTab === tab ? "bg-white text-[#1e3a8a] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 relative" : "bg-[#1d47ad] text-white hover:bg-[#1d4ed8]"}`}>
                 {tab === "Domestik" && <MapPin size={18} />}{tab === "Internasional" && <Globe size={18} />}{tab === "Umroh" && <Box size={18} />}<span>{tab}</span>
               </button>
             ))}

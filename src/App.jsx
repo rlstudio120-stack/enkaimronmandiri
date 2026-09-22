@@ -16,6 +16,8 @@ import Login from "./components/Login";
 import DomestikDaerah from "./components/DomestikDaerah";
 import News from "./components/News"; 
 import NewsDetail from "./components/NewsDetail"; 
+import SemuaDestinasi from "./components/SemuaDestinasi";
+import SemuaPaketUmroh from "./components/SemuaPaketUmroh";
 
 // --- WADAH AREA PUBLIK ---
 function PublicLayout() {
@@ -61,16 +63,17 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/umroh" element={<Umroh />} />
           <Route path="/domestik" element={<Domestik />} />
+          <Route path="/domestik/destinasi" element={<SemuaDestinasi />} />
           
           {/* RUTE PAKET DOMESTIK BARU */}
           <Route path="/paket/domestik/:id" element={<DetailDomestik />} />
           
           {/* RUTE PAKET UMUM (Umroh/Internasional) */}
           <Route path="/paket/:type/:id" element={<PackageDetail />} />
-          
           <Route path="/domestik/daerah/:namaDaerah" element={<DomestikDaerah />} />
           <Route path="/berita" element={<News />} />
           <Route path="/berita/:id" element={<NewsDetail />} />
+          <Route path="/umroh/paket" element={<SemuaPaketUmroh />} />
         </Route>
 
         {/* === AREA LOGIN === */}

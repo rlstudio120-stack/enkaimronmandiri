@@ -31,8 +31,8 @@ function Navbar() {
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className={`font-bold text-sm transition-colors ${isActive('/') ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Beranda</Link>
             <Link to="#" className="font-bold text-sm text-gray-500 hover:text-[#1e3a8a] transition-colors">Tentang Kami</Link>
-            <Link to="/domestik" className={`font-bold text-sm transition-colors ${isActive('/domestik') ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Domestik</Link>
             <Link to="/umroh" className={`font-bold text-sm transition-colors ${isActive('/umroh') ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Umroh</Link>
+            <Link to="/domestik" className={`font-bold text-sm transition-colors ${isActive('/domestik') ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Domestik</Link>
             <Link to="#" className="font-bold text-sm text-gray-500 hover:text-[#1e3a8a] transition-colors">Promo</Link>
             <Link to="#" className="bg-[#f59e0b] hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-lg shadow-yellow-500/20">Hubungi Kami</Link>
           </div>

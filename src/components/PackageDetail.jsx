@@ -1,171 +1,236 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { Calendar, Clock, Plane, ShieldCheck, MapPin, Bus, Train, ChevronDown, ChevronUp, Building } from "lucide-react"; 
+import { 
+  MapPin, Clock, Calendar, ArrowLeft, ChevronRight, 
+  Plane, Building, TrainFront, ChevronDown, ChevronUp, Star
+} from "lucide-react";
 
-const AccordionItem = ({ title, content, defaultOpen = false }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  if (!content || content.trim() === "") return null;
-  return (
-    <div className="border border-gray-200 rounded-2xl mb-4 overflow-hidden shadow-sm bg-white">
-      <button onClick={() => setIsOpen(!isOpen)} className={`w-full flex justify-between items-center p-5 md:px-6 transition-colors duration-300 ${isOpen ? 'bg-blue-50/50' : 'hover:bg-slate-50'}`}>
-        <h3 className={`font-bold text-lg ${isOpen ? 'text-blue-700' : 'text-gray-800'}`}>{title}</h3>
-        <div className={`p-1.5 rounded-full ${isOpen ? 'bg-blue-100' : 'bg-gray-100'}`}>{isOpen ? <ChevronUp size={20} className="text-blue-600" /> : <ChevronDown size={20} className="text-gray-500" />}</div>
-      </button>
-      <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-        <div className="p-5 md:p-6 border-t border-gray-100"><div className="prose max-w-none text-gray-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: content }} /></div>
-      </div>
-    </div>
-  );
-};
-
-function PackageDetail() {
-  const { type, id } = useParams();
+function DetailUmroh() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [paket, setPaket] = useState(null);
+  const [config, setConfig] = useState(null); 
   const [loading, setLoading] = useState(true);
+  const [openAccordion, setOpenAccordion] = useState(null);
 
   useEffect(() => {
-    const fetchPaket = async () => {
+    const fetchData = async () => {
       try {
-        const docRef = doc(db, type === "umroh" ? "paket_umroh" : "paket_domestik", id);
+        const docRef = doc(db, "paket_umroh", id);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) setPaket({ id: docSnap.id, ...docSnap.data() });
-      } catch (error) { console.error("Error:", error); } 
-      finally { setLoading(false); }
+        if (docSnap.exists()) {
+          setPaket({ id: docSnap.id, ...docSnap.data() });
+        }
+        
+        const configSnap = await getDoc(doc(db, "settings", "umroh"));
+        if (configSnap.exists()) {
+          setConfig(configSnap.data());
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchPaket();
-  }, [type, id]);
-
-  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-xl text-blue-900">Memuat detail paket...</div>;
-  if (!paket) return <div className="h-screen flex items-center justify-center font-bold text-xl text-red-600">Paket tidak ditemukan.</div>;
+    fetchData();
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const formatRupiah = (angka) => {
     if (!angka) return "Rp 0";
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka);
   };
 
-  const formatWaktu = (tipe, waktu) => {
-    if (!waktu) return "Belum ditentukan";
-    if (tipe === "tanggal") {
-      const dateObj = new Date(waktu);
-      return dateObj.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
+  const toggleAccordion = (index) => setOpenAccordion(openAccordion === index ? null : index);
+
+  const getCtaGradient = (bgColor) => {
+    switch(bgColor) {
+      case "bg-[#1e3a8a]": return "from-[#1e3a8a]/95 via-[#1e3a8a]/70 to-transparent";
+      case "bg-[#f59e0b]": return "from-[#f59e0b]/95 via-[#f59e0b]/70 to-transparent";
+      case "bg-emerald-800": return "from-emerald-800/95 via-emerald-800/70 to-transparent";
+      case "bg-black": return "from-black/95 via-black/70 to-transparent";
+      default: return "from-[#0f172a]/95 via-[#0f172a]/70 to-transparent";
     }
-    return waktu;
   };
 
-  const hubungiWhatsApp = () => {
-    const nomorWA = "6281234567890";
-    const pesan = `Halo Admin Enka Imron Mandiri, saya tertarik untuk konsultasi mengenai paket *${paket.title}*. Bisa mohon info lebih lanjut?`;
-    window.open(`https://wa.me/${nomorWA}?text=${encodeURIComponent(pesan)}`, "_blank");
+  const badgeColors = { "Promo": "bg-red-500", "Reguler": "bg-blue-600", "Premium": "bg-purple-600", "VIP": "bg-[#f59e0b]" };
+
+  const renderStars = (count) => {
+    return Array.from({ length: parseInt(count) || 0 }).map((_, i) => (
+      <Star key={i} size={12} className="text-[#f59e0b] fill-current" />
+    ));
   };
 
-  // Menentukan teks per-orang atau per-grup untuk Domestik
-  const hargaTeksLabel = type === "domestik" 
-    ? (paket.tipeTrip === "Private Trip" ? "/ Group" : "/ Orang") 
-    : "";
+  if (loading) return <div className="min-h-screen flex justify-center items-center pt-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#1e3a8a]"></div></div>;
+  if (!paket) return <div className="min-h-screen flex flex-col justify-center items-center pt-20"><h2 className="text-2xl font-bold mb-4">Paket Tidak Ditemukan</h2><button onClick={() => navigate(-1)} className="bg-[#1e3a8a] text-white px-6 py-2 rounded-xl">Kembali</button></div>;
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-16 pt-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="pt-28 pb-20 bg-slate-50 min-h-screen font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <Link to={`/${type}`} className="inline-flex items-center text-gray-500 hover:text-blue-600 font-semibold mb-6 transition">
-          ← Kembali ke Daftar Paket
-        </Link>
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-[#1e3a8a] font-bold mb-6 transition-colors">
+          <ArrowLeft size={18} /> Kembali ke Pilihan Paket
+        </button>
 
-        <div className="w-full h-[300px] md:h-[450px] relative rounded-3xl overflow-hidden mb-8 shadow-sm border border-gray-100">
-          <img src={paket.image} alt={paket.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-          {paket.tampilBadge !== "tidak" && paket.badge && (
-            <div className="absolute top-6 left-6 text-white text-sm font-bold px-5 py-2 rounded-full shadow-lg bg-red-600">{paket.badge}</div>
-          )}
-          <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10 text-white">
-            <h1 className="text-3xl md:text-5xl font-extrabold mb-3 text-shadow-lg leading-tight">{paket.title}</h1>
-            <p className="text-lg opacity-90 font-medium">Paket Perjalanan {type === 'umroh' ? 'Umroh' : 'Domestik'} Terbaik Bersama Kami</p>
+        <div className="relative w-full h-[350px] md:h-[450px] rounded-3xl overflow-hidden mb-10 shadow-lg bg-[#0f172a]">
+          <img src={paket.image} alt={paket.title} className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/90 via-[#0f172a]/40 to-transparent"></div>
+          
+          <div className="absolute bottom-0 left-0 w-full p-6 md:p-10">
+            <div className="flex gap-2 mb-4 flex-wrap">
+              <span className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                <Clock size={14}/> {paket.duration || "9 Hari"}
+              </span>
+              
+              {paket.badge && paket.badge !== "Tidak Ada" && (
+                <span className={`text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm ${badgeColors[paket.badge] || paket.badgeColor || 'bg-purple-600'}`}>
+                  {paket.badge}
+                </span>
+              )}
+            </div>
+            <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight drop-shadow-lg">{paket.title}</h1>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* HOTEL UMROH */}
-            {type === "umroh" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                <div className="border border-gray-200 rounded-2xl p-5 flex items-center gap-5 bg-white shadow-sm hover:shadow-md transition">
-                  <div className="text-5xl drop-shadow-sm">🕋</div>
-                  <div><p className="text-xs text-gray-400 uppercase font-extrabold tracking-wider mb-1">Hotel Mekah</p><p className="font-bold text-gray-800 text-lg">{paket.pakaiNamaHotel === "ya" && paket.hotelMekah ? paket.hotelMekah : `Hotel Bintang ${paket.bintangMekah || 5}`}</p><p className="text-yellow-400 text-sm mt-1 tracking-widest drop-shadow-sm">{Array(Number(paket.bintangMekah || 5)).fill("⭐").join("")}</p></div>
-                </div>
-                <div className="border border-gray-200 rounded-2xl p-5 flex items-center gap-5 bg-white shadow-sm hover:shadow-md transition">
-                  <div className="text-5xl drop-shadow-sm">🕌</div>
-                  <div><p className="text-xs text-gray-400 uppercase font-extrabold tracking-wider mb-1">Hotel Madinah</p><p className="font-bold text-gray-800 text-lg">{paket.pakaiNamaHotel === "ya" && paket.hotelMadinah ? paket.hotelMadinah : `Hotel Bintang ${paket.bintangMadinah || 5}`}</p><p className="text-yellow-400 text-sm mt-1 tracking-widest drop-shadow-sm">{Array(Number(paket.bintangMadinah || 5)).fill("⭐").join("")}</p></div>
-                </div>
-              </div>
-            )}
-
-            {/* HOTEL DOMESTIK (Hanya Muncul Jika Diisi) */}
-            {type === "domestik" && paket.hotel && (
-              <div className="border border-gray-200 rounded-2xl p-5 flex items-center gap-5 bg-white shadow-sm mb-2">
-                <div className="text-4xl drop-shadow-sm bg-blue-50 text-blue-600 p-3 rounded-xl border border-blue-100"><Building size={32}/></div>
-                <div><p className="text-xs text-gray-400 uppercase font-extrabold tracking-wider mb-1">Akomodasi Penginapan</p><p className="font-bold text-gray-800 text-lg">{paket.hotel}</p></div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <AccordionItem title="Informasi Paket" content={paket.deskripsi} defaultOpen={true} />
-              {paket.informasiTambahan && paket.informasiTambahan.map((info, idx) => (
-                <AccordionItem key={idx} title={info.judul || "Informasi Tambahan"} content={info.isi} />
-              ))}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
+              <h3 className="text-xl font-bold text-[#1e3a8a] mb-6 border-b pb-4">Rincian Perjalanan Ibadah</h3>
+              <div className="text-gray-700 leading-relaxed text-sm md:text-base 
+                [&>p]:mb-4 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:text-[#1e3a8a] [&>h3]:mb-3 [&>h3]:mt-6
+                [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ul>li]:mb-1.5"
+                dangerouslySetInnerHTML={{ __html: paket.deskripsi }} />
             </div>
+
+            {paket.informasiTambahan && paket.informasiTambahan.length > 0 && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
+                <h3 className="text-xl font-bold text-[#1e3a8a] mb-6">Informasi Tambahan</h3>
+                <div className="space-y-3">
+                  {paket.informasiTambahan.map((info, index) => (
+                    <div key={index} className="border border-gray-200 rounded-xl overflow-hidden">
+                      <button onClick={() => toggleAccordion(index)} className="w-full bg-slate-50 hover:bg-slate-100 px-6 py-4 flex justify-between items-center transition-colors outline-none text-left">
+                        <span className="font-bold text-gray-800 text-sm">{info.judul}</span>
+                        {openAccordion === index ? <ChevronUp size={18} className="text-gray-500" /> : <ChevronDown size={18} className="text-gray-500" />}
+                      </button>
+                      <div className={`transition-all duration-300 ${openAccordion === index ? "max-h-[1000px] opacity-100 border-t border-gray-200" : "max-h-0 opacity-0 overflow-hidden"}`}>
+                        <div className="p-6 text-sm text-gray-600 [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-1" dangerouslySetInnerHTML={{ __html: info.isi }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 sticky top-28">
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-8 sticky top-28">
+              <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b border-gray-100 pb-4">Fasilitas Paket</h3>
               
-              <div className="border-b border-gray-100 pb-5 mb-5">
-                <p className="text-sm text-gray-500 font-semibold mb-1">Harga Paket Mulai</p>
-                <div className="flex items-end gap-1">
-                  <h3 className="text-3xl font-extrabold text-[#f59e0b]">{formatRupiah(paket.price || paket.hargaOpenTrip || paket.hargaPrivateTrip)}</h3>
-                  {hargaTeksLabel && <span className="text-sm font-semibold text-gray-500 mb-1">{hargaTeksLabel}</span>}
-                </div>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Ringkasan Info</h4>
-                
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-50 p-2.5 rounded-xl text-blue-600">{type === "umroh" ? <Calendar size={20} strokeWidth={2.5}/> : <MapPin size={20} strokeWidth={2.5}/>}</div>
-                  <div><p className="text-xs text-gray-500 font-medium">{type === "umroh" ? "Keberangkatan" : "Destinasi"}</p><p className="text-sm font-bold text-gray-800">{type === "umroh" ? formatWaktu(paket.tipeWaktu, paket.waktuInfo) : (paket.daerah || "Wisata Nusantara")}</p></div>
+              <div className="space-y-5 mb-8">
+                <div className="flex items-start gap-4">
+                  <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Calendar size={20}/></div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Keberangkatan</p>
+                    <p className="text-sm font-semibold text-gray-800 mt-0.5 capitalize">
+                      {paket.tipeWaktu === "bulan" ? `Bulan ${paket.waktuInfo}` : paket.waktuInfo}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="bg-amber-50 p-2.5 rounded-xl text-amber-600"><Clock size={20} strokeWidth={2.5}/></div>
-                  <div><p className="text-xs text-gray-500 font-medium">Durasi Perjalanan</p><p className="text-sm font-bold text-gray-800">{paket.duration}</p></div>
-                </div>
+                {paket.maskapai && (
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Plane size={20}/></div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Maskapai Penerbangan</p>
+                      <p className="text-sm font-semibold text-gray-800 mt-0.5">{paket.maskapai}</p>
+                    </div>
+                  </div>
+                )}
 
-                <div className="flex items-center gap-4">
-                  <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-600">{type === "umroh" ? <Plane size={20} strokeWidth={2.5}/> : <Bus size={20} strokeWidth={2.5}/>}</div>
-                  <div><p className="text-xs text-gray-500 font-medium">{type === "umroh" ? "Maskapai" : "Transportasi"}</p><p className="text-sm font-bold text-gray-800 uppercase">{paket.maskapai || paket.transport || "-"}</p></div>
-                </div>
+                {/* PERBAIKAN: Hotel Mekah selalu tampil, jika disembunyikan pakai teks 'Setaraf Bintang' */}
+                {(paket.hotelMekah || paket.bintangMekah) && (
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Building size={20}/></div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Hotel Mekah</p>
+                      <p className="text-sm font-semibold text-gray-800 mt-0.5 flex items-center gap-2">
+                        {paket.pakaiNamaHotel !== "tidak" && paket.hotelMekah ? paket.hotelMekah : "Setaraf Bintang"} 
+                        <span className="flex">{renderStars(paket.bintangMekah || 5)}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
 
-                {paket.keretaCepat === "ya" && type === "umroh" && (
-                  <div className="flex items-center gap-4 mt-2">
-                    <div className="bg-purple-50 p-2.5 rounded-xl text-purple-600 border border-purple-100"><Train size={20} strokeWidth={2.5}/></div>
-                    <div><p className="text-xs text-gray-500 font-medium">Fasilitas Premium</p><p className="text-sm font-bold text-gray-800">Kereta Cepat Haramain</p></div>
+                {/* PERBAIKAN: Hotel Madinah selalu tampil, jika disembunyikan pakai teks 'Setaraf Bintang' */}
+                {(paket.hotelMadinah || paket.bintangMadinah) && (
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Building size={20}/></div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Hotel Madinah</p>
+                      <p className="text-sm font-semibold text-gray-800 mt-0.5 flex items-center gap-2">
+                        {paket.pakaiNamaHotel !== "tidak" && paket.hotelMadinah ? paket.hotelMadinah : "Setaraf Bintang"}
+                        <span className="flex">{renderStars(paket.bintangMadinah || 5)}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {paket.keretaCepat === "ya" && (
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><TrainFront size={20}/></div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Transportasi Khusus</p>
+                      <p className="text-sm font-semibold text-gray-800 mt-0.5">Kereta Cepat Haramain</p>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <button onClick={hubungiWhatsApp} className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-500/30 flex justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.005-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.05-.084-.182-.133-.38-.232"/></svg>
-                Konsultasi WhatsApp
-              </button>
+              <div className="text-center border-t border-gray-100 pt-6 mb-6">
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">Harga Mulai Dari</p>
+                <div className="flex justify-center items-baseline gap-1">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-[#f59e0b]">{formatRupiah(paket.price)}</h2>
+                  <span className="text-gray-500 text-sm font-semibold">/pax</span>
+                </div>
+              </div>
+              
+              <Link to="https://wa.me/6281234567890" target="_blank" className="w-full bg-[#0d9118] hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/30 transition-colors text-sm md:text-base flex items-center justify-center gap-2">
+                Konsultasi via WA <ChevronRight size={18}/>
+              </Link>
             </div>
           </div>
         </div>
+
+        {config && (
+          <div className="mt-16 md:mt-24">
+            <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[200px] md:min-h-[250px] flex items-center ${config.ctaBgColor || 'bg-[#1e3a8a]'}`}>
+              <div className="absolute inset-0 w-full h-full">
+                <img src={config.ctaBg || "https://images.unsplash.com/photo-1565552643982-b5e13d9646b9?q=80&w=2000"} className={`w-full h-full object-cover ${config.ctaBgPos || 'object-center'}`} />
+              </div>
+              <div className={`absolute inset-0 bg-gradient-to-r ${getCtaGradient(config.ctaBgColor || 'bg-[#1e3a8a]')}`}></div>
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
+              
+              <div className="relative z-10 w-full md:w-2/3 p-8 md:p-12 text-left">
+                <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4 leading-snug">
+                  {config.ctaTitle || "Siap Berangkat Umroh?"}
+                </h2>
+                <p className="text-blue-100 mb-6 text-sm md:text-base max-w-xl leading-relaxed">
+                  {config.ctaDesc || "Percayakan perjalanan ibadah Anda bersama Enka Imron Mandiri. Kami siap melayani dengan amanah dan sepenuh hati."}
+                </p>
+                <Link to={config.ctaBtnLink || "https://wa.me/6281234567890"} target="_blank" className="inline-block bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-colors text-sm md:text-base">
+                  {config.ctaBtnText || "Hubungi Kami Sekarang"}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
 
-export default PackageDetail;
+export default DetailUmroh;

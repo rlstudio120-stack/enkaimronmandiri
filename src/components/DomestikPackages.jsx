@@ -65,7 +65,14 @@ function DomestikPackages() {
               <div className="h-48 relative overflow-hidden">
                 <img src={pkg.image || "https://images.unsplash.com/photo-1555400038-63f5ba517a47?q=80&w=800"} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70"></div>
-                {pkg.badge && <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-md ${pkg.badgeColor || 'bg-purple-600'}`}>{pkg.badge}</div>}
+                
+                {/* PERBAIKAN BADGE TRANSPARAN & LOGIKA 'TIDAK ADA' */}
+                {pkg.badge && pkg.badge !== "Tidak Ada" && (
+                  <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-lg backdrop-blur-md bg-opacity-80 border border-white/30 ${pkg.badgeColor || 'bg-purple-600'}`}>
+                    {pkg.badge}
+                  </div>
+                )}
+
                 <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold text-[#1e3a8a] flex items-center gap-1.5 shadow-sm">
                   <Users size={12}/> {pkg.tipeTrip || "Open Trip"}
                 </div>

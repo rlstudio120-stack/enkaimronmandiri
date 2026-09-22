@@ -32,7 +32,7 @@ function UmrohPackages() {
         <h2 className="text-2xl md:text-3xl font-bold text-[#1e3a8a]">
           Paket Umroh Pilihan
         </h2>
-        <Link to="/umroh" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition duration-300">
+        <Link to="/umroh/paket" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition duration-300">
           Lihat Semua Paket ➔
         </Link>
       </div>
@@ -92,7 +92,7 @@ function UmrohPackages() {
       )}
       
       <div className="mt-8 text-center md:hidden">
-         <Link to="/umroh" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] transition duration-300">
+         <Link to="/umroh/paket" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] transition duration-300">
           Lihat Semua Paket ➔
         </Link>
       </div>
