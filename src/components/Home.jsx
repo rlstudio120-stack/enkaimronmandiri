@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query } from "firebase/firestore";
 import { db } from "../firebase";
+import { Link, useNavigate } from "react-router-dom";
 import { 
-  MapPin, Calendar, Users, Plane, Globe, Box, 
-  ShieldCheck, Star, Heart, Clock, Award, ThumbsUp, Gem, Bus, ChevronLeft, ChevronRight, Tent,
-  Zap, Smile, CheckCircle, Compass
+  MapPin, Clock, Users, Calendar, ChevronRight, ChevronLeft,
+  Plane, Bus, TrainFront, Ship, Car, Box, Star,
+  ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, CheckCircle, Compass, Globe, Search, Tent
 } from "lucide-react";
 
 const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Tent, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass };
@@ -38,6 +38,7 @@ function Home() {
   const [layananList, setLayananList] = useState(defaultLayanan);
   const [mengapaList, setMengapaList] = useState([]);
   const [testimoniList, setTestimoniList] = useState(defaultTestimoni);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -75,11 +76,8 @@ function Home() {
     }
   }, [config.testiAutoSlide, totalSlides]);
 
-  const B1Icon = IconMap[config.b1Icon] || ShieldCheck;
-  const B2Icon = IconMap[config.b2Icon] || Star;
-  const B3Icon = IconMap[config.b3Icon] || Heart;
+  const formatRupiah = (angka) => { if (!angka) return "Rp 0"; return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka); };
 
-  // FUNGSI PEMETAAN WARNA GRADASI (Penting agar Tailwind bisa membaca kode warnanya)
   const getPromoGradient = (bgColor) => {
     switch(bgColor) {
       case "bg-[#1e3a8a]": return "from-transparent via-[#1e3a8a]/80 to-[#1e3a8a] md:via-[#1e3a8a]/60";
@@ -88,6 +86,19 @@ function Home() {
       case "bg-black": return "from-transparent via-black/80 to-black md:via-black/60";
       default: return "from-transparent via-[#0f172a]/80 to-[#0f172a] md:via-[#0f172a]/60";
     }
+  };
+
+  const renderStars = (count) => {
+    return Array.from({ length: parseInt(count) || 5 }).map((_, i) => (
+      <Star key={i} size={16} className="text-[#f59e0b] fill-current" />
+    ));
+  };
+
+  // FUNGSI PENCARIAN BERANDA (MENGARAHKAN KE HALAMAN DIVISI YANG SESUAI)
+  const handleSearchSubmit = () => {
+    if (activeTab === "Domestik") navigate("/domestik");
+    else if (activeTab === "Internasional") navigate("/internasional");
+    else if (activeTab === "Umroh") navigate("/umroh");
   };
 
   return (
@@ -108,17 +119,26 @@ function Home() {
           <p className="text-blue-100 text-[13px] md:text-lg max-w-[260px] md:max-w-xl mb-6 md:mb-8 leading-relaxed whitespace-pre-wrap">
             {config.heroDesc}
           </p>
+          
+          {/* PERBAIKAN: Gaya 3 Ikon Disamakan dengan Halaman Lain (Glassmorphism) */}
           {config.showBadges === "ya" && (
-            <div className="hidden md:flex flex-wrap gap-6 text-white font-medium text-base mb-2">
-              {config.b1Text && <span className="flex items-center gap-1.5"><B1Icon size={18} className="text-[#f59e0b]"/> {config.b1Text}</span>}
-              {config.b2Text && <span className="flex items-center gap-1.5"><B2Icon size={18} className="text-[#f59e0b]"/> {config.b2Text}</span>}
-              {config.b3Text && <span className="flex items-center gap-1.5"><B3Icon size={18} className="text-[#f59e0b]"/> {config.b3Text}</span>}
+            <div className="hidden md:flex flex-wrap items-center gap-6 mt-6 mb-2">
+              {[{ text: config.b1Text, iconStr: config.b1Icon }, { text: config.b2Text, iconStr: config.b2Icon }, { text: config.b3Text, iconStr: config.b3Icon }].map((item, index) => {
+                if (!item.text) return null;
+                const IconComp = IconMap[item.iconStr] || Star;
+                return (
+                  <div key={index} className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/20 shadow-sm">
+                    <div className="bg-[#f59e0b] p-2 rounded-full text-white"><IconComp size={16} /></div>
+                    <span className="text-white font-bold text-sm tracking-wide">{item.text}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* 2. KOTAK PENCARIAN */}
+      {/* 2. KOTAK PENCARIAN (DESAIN ASLI DIPERTAHANKAN, FUNGSI TOMBOL DITAMBAHKAN) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-20 md:-mt-16 mb-16 md:mb-20">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="flex bg-[#1e3a8a]">
@@ -135,7 +155,7 @@ function Home() {
                 <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Tujuan Daerah</label><div className="relative"><MapPin size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="text" placeholder="Contoh: Labuan Bajo" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
                 <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Bulan / Tanggal</label><div className="relative"><Calendar size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="date" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
                 <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Jumlah Peserta</label><div className="relative"><Users size={16} className="absolute left-3 top-3.5 text-gray-400" /><select className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold bg-white appearance-none"><option>1 Orang (Open Trip)</option><option>Group (Private Trip)</option></select></div></div>
-                <button className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30">Cari Paket Trip</button>
+                <button onClick={handleSearchSubmit} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2"><Search size={18}/> Cari Paket Trip</button>
               </div>
             )}
             {activeTab === "Internasional" && (
@@ -143,7 +163,7 @@ function Home() {
                 <div className="flex flex-col relative md:col-span-2"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Negara Tujuan</label><div className="relative"><Globe size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="text" placeholder="Contoh: Turki, Jepang, Eropa..." className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
                 <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Bulan Rencana</label><div className="relative"><Calendar size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="month" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
                 <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Jumlah Peserta</label><div className="relative"><Users size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="number" placeholder="Contoh: 2" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <button className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30">Cari Tour Mancanegara</button>
+                <button onClick={handleSearchSubmit} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2"><Search size={18}/> Cari Tour Mancanegara</button>
               </div>
             )}
             {activeTab === "Umroh" && (
@@ -151,7 +171,7 @@ function Home() {
                 <div className="flex flex-col relative md:col-span-2"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Pilih Jenis Paket</label><div className="relative"><Box size={16} className="absolute left-3 top-3.5 text-gray-400" /><select className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold bg-white appearance-none"><option>Semua Paket Umroh</option><option>Umroh Reguler</option><option>Umroh Plus (Turki/Aqsa)</option><option>Umroh VIP</option></select></div></div>
                 <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Bulan Keberangkatan</label><div className="relative"><Calendar size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="month" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
                 <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Jumlah Jamaah</label><div className="relative"><Users size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="number" placeholder="Contoh: 1" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <button className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30">Cari Paket Umroh</button>
+                <button onClick={handleSearchSubmit} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2"><Search size={18}/> Cari Paket Umroh</button>
               </div>
             )}
           </div>
@@ -184,7 +204,6 @@ function Home() {
             <img src={config.promoBg || defaultConfig.promoBg} className={`w-full h-full object-cover ${config.promoBgPos || 'object-center'}`} />
           </div>
           
-          {/* Eksekusi Fungsi Warna Gradasi di sini */}
           <div className={`absolute inset-0 bg-gradient-to-r ${getPromoGradient(config.promoBgColor)}`}></div>
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
           
@@ -198,7 +217,7 @@ function Home() {
             </div>
             <div className="bg-[#1e3a8a]/70 border border-blue-500/30 p-3 md:p-6 rounded-lg md:rounded-xl flex flex-col items-center justify-center shrink-0 backdrop-blur-sm min-w-[90px] md:min-w-[180px]">
               <p className="text-blue-200 text-[8px] md:text-sm font-semibold uppercase tracking-widest mb-0.5 md:mb-1">Mulai Dari</p>
-              <h4 className="text-lg md:text-5xl font-extrabold text-[#f59e0b]">{config.promoPrice} <span className="text-[9px] md:text-lg font-bold">Jt-an</span></h4>
+              <h4 className="text-lg md:text-5xl font-extrabold text-[#f59e0b]">{formatRupiah(config.promoPrice)} <span className="text-[9px] md:text-lg font-bold">/pax</span></h4>
             </div>
           </div>
         </div>

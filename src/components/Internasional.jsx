@@ -5,10 +5,10 @@ import { Link } from "react-router-dom";
 import { 
   MapPin, Clock, Users, Calendar, ChevronRight, 
   Plane, Bus, TrainFront, Ship, Car, Box, Star,
-  ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, CheckCircle, Compass, Search
+  ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, CheckCircle, Compass, Globe, Search
 } from "lucide-react";
 
-const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Plane, Box, Zap, Smile, CheckCircle, Compass };
+const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass };
 
 const getTransportIcon = (jenis) => {
   switch(jenis) {
@@ -17,26 +17,26 @@ const getTransportIcon = (jenis) => {
     case "Kapal": return Ship;
     case "Shuttle": return Car;
     case "Jeep": return Car;
-    default: return Bus;
+    default: return Plane;
   }
 };
 
-const defaultDomestikConfig = {
-  heroSmallText: "Jelajahi Indonesia",
+const defaultInternasionalConfig = {
+  heroSmallText: "Jelajahi Dunia",
   heroSmallTextSize: "text-[10px] md:text-sm",
-  heroTitle: "Destinasi Wisata Domestik Terbaik", 
-  heroDesc: "Temukan keindahan alam dan budaya Indonesia melalui berbagai pilihan Open Trip dan Private Trip kami.", 
-  heroBg: "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=2000",
-  showBadges: "ya", d1Text: "Pemandu Profesional", d1Icon: "Users", d2Text: "Harga Transparan", d2Icon: "Star", d3Text: "Aman & Nyaman", d3Icon: "ShieldCheck",
-  ctaTitle: "Ingin Menyesuaikan Isi Paket Ini?",
-  ctaDesc: "Atau ingin membuat rute perjalanan impian Anda sendiri? Konsultasikan dengan tim kami untuk mewujudkan liburan yang tak terlupakan.",
+  heroTitle: "Destinasi Wisata Internasional Terbaik", 
+  heroDesc: "Temukan keindahan ragam budaya dan pesona negara-negara di seluruh dunia melalui pilihan trip kami.", 
+  heroBg: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000",
+  showBadges: "ya", d1Text: "Pemandu Berpengalaman", d1Icon: "Users", d2Text: "Fasilitas Premium", d2Icon: "Star", d3Text: "Aman & Nyaman", d3Icon: "ShieldCheck",
+  ctaTitle: "Punya Negara Impian Sendiri?",
+  ctaDesc: "Konsultasikan rute perjalanan ke negara impian Anda dengan tim ahli kami.",
   ctaBtnText: "Konsultasi via WhatsApp",
   ctaBtnLink: "https://wa.me/6281234567890",
   ctaBgColor: "bg-[#1e3a8a]"
 };
 
-function Domestik() {
-  const [config, setConfig] = useState(defaultDomestikConfig);
+function Internasional() {
+  const [config, setConfig] = useState(defaultInternasionalConfig);
   const [daerahList, setDaerahList] = useState([]);
   const [paket, setPaket] = useState([]);
   const [keunggulanList, setKeunggulanList] = useState([]);
@@ -46,26 +46,28 @@ function Domestik() {
   // State untuk Slideshow & Pencarian
   const [paketSlide, setPaketSlide] = useState(0);
   const [beritaSlide, setBeritaSlide] = useState(0);
-  const [searchDaerah, setSearchDaerah] = useState("");
+  const [searchKawasan, setSearchKawasan] = useState("");
   const [searchTipe, setSearchTipe] = useState("");
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const configSnap = await getDoc(doc(db, "settings", "domestik"));
-        if (configSnap.exists()) setConfig({ ...defaultDomestikConfig, ...configSnap.data() });
+        const configSnap = await getDoc(doc(db, "settings", "internasional"));
+        if (configSnap.exists()) setConfig({ ...defaultInternasionalConfig, ...configSnap.data() });
 
-        const daerahSnap = await getDocs(collection(db, "destinasi_domestik"));
+        const daerahSnap = await getDocs(collection(db, "destinasi_internasional"));
         const allDaerah = daerahSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setDaerahList(allDaerah.filter(d => d.status !== "Nonaktif")); 
 
-        const paketSnap = await getDocs(collection(db, "paket_domestik"));
+        // PERBAIKAN: Ambil semua paket, jangan di slice di sini
+        const paketSnap = await getDocs(collection(db, "paket_internasional"));
         setPaket(paketSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-        const keunggulanSnap = await getDocs(collection(db, "keunggulan_domestik"));
+        const keunggulanSnap = await getDocs(collection(db, "keunggulan_internasional"));
         setKeunggulanList(keunggulanSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-        const qBerita = query(collection(db, "berita"), where("tipe", "==", "Domestik"));
+        // PERBAIKAN: Ambil semua berita
+        const qBerita = query(collection(db, "berita"), where("tipe", "==", "Internasional"));
         const beritaSnap = await getDocs(qBerita);
         setBeritaList(beritaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
       } catch (error) { 
@@ -92,17 +94,19 @@ function Domestik() {
     }
   };
 
-  // LOGIKA PENCARIAN DOMESTIK
+  // LOGIKA PENCARIAN
   const displayedPaket = paket.filter(pkg => {
-    const textSearch = pkg.daerah + " " + pkg.title;
-    const matchDaerah = searchDaerah === "" || textSearch.toLowerCase().includes(searchDaerah.toLowerCase());
+    const textSearch = pkg.negara + " " + pkg.title;
+    const matchKawasan = searchKawasan === "" || textSearch.toLowerCase().includes(searchKawasan.toLowerCase());
     const matchTipe = searchTipe === "" || (pkg.badge === searchTipe);
-    return matchDaerah && matchTipe;
+    return matchKawasan && matchTipe;
   });
 
+  // Tampilkan max 4 untuk grid desktop
   const paketTampilGrid = displayedPaket.slice(0, 4);
   const beritaTampilGrid = beritaList.slice(0, 3);
 
+  // Auto-slide khusus mobile
   useEffect(() => {
     const interval = setInterval(() => {
       if (paketTampilGrid.length > 1) setPaketSlide((prev) => (prev + 1) % paketTampilGrid.length);
@@ -112,9 +116,9 @@ function Domestik() {
   }, [paketTampilGrid.length, beritaTampilGrid.length]);
 
   const renderPaketCard = (item) => (
-    <Link to={`/paket/domestik/${item.id}`} key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col group cursor-pointer w-full">
+    <Link to={`/paket/internasional/${item.id}`} key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col group cursor-pointer w-full">
       <div className="relative h-48 overflow-hidden">
-        <img src={item.image || "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=800"} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+        <img src={item.image || "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800"} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70"></div>
         {item.badge && item.badge !== "Tidak Ada" && item.badge.trim() !== "" && (
           <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-lg backdrop-blur-md bg-opacity-80 border border-white/30 ${badgeColors[item.badge] || item.badgeColor || 'bg-purple-600'}`}>{item.badge}</div>
@@ -122,7 +126,7 @@ function Domestik() {
         <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold text-[#1e3a8a] flex items-center gap-1.5 shadow-sm"><Users size={12}/> {item.tipeTrip || "Open Trip"}</div>
       </div>
       <div className="p-5 flex-1 flex flex-col">
-        <div className="flex items-center gap-1 text-[11px] font-bold text-[#f59e0b] mb-1.5 uppercase tracking-wide"><MapPin size={12} /> {item.daerah || "Domestik"}</div>
+        <div className="flex items-center gap-1 text-[11px] font-bold text-[#f59e0b] mb-1.5 uppercase tracking-wide"><Globe size={12} /> {item.negara || item.daerah || "Internasional"}</div>
         <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-[#1e3a8a] transition-colors leading-snug">{item.title}</h3>
         <div className="flex flex-wrap gap-y-2 gap-x-4 mb-5 border-b border-gray-100 pb-4">
           <div className="flex items-center gap-1.5 text-xs text-gray-600 font-semibold w-full"><Clock size={14} className="text-[#1e3a8a] shrink-0" /> {item.duration || "1 Hari"}</div>
@@ -143,7 +147,7 @@ function Domestik() {
   const renderBeritaCard = (item) => (
     <div key={item.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group flex flex-col w-full">
       <Link to={`/berita/${item.id}`} className="relative h-48 overflow-hidden block">
-        <img src={item.image || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800"} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        <img src={item.image || "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800"} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
       </Link>
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex justify-between items-center mb-3">
@@ -161,7 +165,7 @@ function Domestik() {
     <div className="pt-20 bg-slate-50 min-h-screen overflow-x-hidden">
       
       <div className="relative bg-[#0f172a] pt-16 pb-32 md:pt-24 md:pb-28">
-        <div className={`absolute inset-0 bg-cover ${config.heroBgPos || 'bg-center'}`} style={{ backgroundImage: `url('${config.heroBg || defaultDomestikConfig.heroBg}')` }}></div>
+        <div className={`absolute inset-0 bg-cover ${config.heroBgPos || 'bg-center'}`} style={{ backgroundImage: `url('${config.heroBg || defaultInternasionalConfig.heroBg}')` }}></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/90 via-[#1e3a8a]/60 to-transparent"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
           {config.heroSmallText && (
@@ -192,10 +196,10 @@ function Domestik() {
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="flex flex-col relative">
-              <label className="text-xs font-semibold text-gray-500 mb-1 ml-1">Daerah / Nama Paket Tujuan</label>
+              <label className="text-xs font-semibold text-gray-500 mb-1 ml-1">Kawasan / Negara / Paket</label>
               <div className="relative">
-                <MapPin size={16} className="absolute left-3 top-3.5 text-gray-400" />
-                <input type="text" placeholder="Contoh: Bali, Bromo..." value={searchDaerah} onChange={(e) => setSearchDaerah(e.target.value)} className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-sm font-semibold"/>
+                <Globe size={16} className="absolute left-3 top-3.5 text-gray-400" />
+                <input type="text" placeholder="Contoh: Eropa, Jepang..." value={searchKawasan} onChange={(e) => setSearchKawasan(e.target.value)} className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-sm font-semibold"/>
               </div>
             </div>
             <div className="flex flex-col relative">
@@ -211,7 +215,7 @@ function Domestik() {
                 </select>
               </div>
             </div>
-            <button onClick={() => { if(!searchDaerah && !searchTipe) alert("Pilih kategori atau ketikkan daerah tujuan untuk mencari!") }} className="bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-yellow-500/30 flex items-center justify-center gap-2">
+            <button onClick={() => { if(!searchKawasan && !searchTipe) alert("Pilih kategori atau ketikkan kawasan untuk mencari!") }} className="bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-yellow-500/30 flex items-center justify-center gap-2">
               <Search size={18} /> Cari Paket
             </button>
           </div>
@@ -225,11 +229,11 @@ function Domestik() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
             <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
               <div>
-                <p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Jelajahi Indonesia</p>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-[#1e3a8a]">Daerah Destinasi Populer</h2>
+                <p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Jelajahi Dunia</p>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-[#1e3a8a]">Kawasan & Destinasi Populer</h2>
               </div>
               {daerahList.length > 4 && (
-                <Link to="/domestik/destinasi" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition">
+                <Link to="/internasional/destinasi" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition">
                   Lihat Semua Destinasi <ChevronRight size={18}/>
                 </Link>
               )}
@@ -238,18 +242,18 @@ function Domestik() {
             {daerahList.length > 0 ? (
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                  {daerahList.slice(0, 4).map((daerah) => (
-                   <Link to={`/domestik/daerah/${daerah.title}`} key={daerah.id} className="relative h-40 md:h-56 rounded-2xl overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all">
-                     <img src={daerah.image || "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=800"} alt={daerah.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                   <Link to={`/internasional/destinasi/${daerah.title}`} key={daerah.id} className="relative h-40 md:h-56 rounded-2xl overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all">
+                     <img src={daerah.image || "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800"} alt={daerah.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                      <h3 className="absolute bottom-4 left-4 text-white font-bold text-lg md:text-xl tracking-wide">{daerah.title}</h3>
                    </Link>
                  ))}
                </div>
-            ) : (<div className="text-center py-10 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">Belum ada daerah destinasi yang aktif.</div>)}
+            ) : (<div className="text-center py-10 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">Belum ada kawasan destinasi yang aktif.</div>)}
             
             {daerahList.length > 4 && (
               <div className="mt-8 flex justify-center md:hidden">
-                <Link to="/domestik/destinasi" className="flex items-center gap-2 text-[#1e3a8a] font-bold text-sm bg-blue-50 py-3 px-6 rounded-xl">Lihat Semua Destinasi <ChevronRight size={18}/></Link>
+                <Link to="/internasional/destinasi" className="flex items-center gap-2 text-[#1e3a8a] font-bold text-sm bg-blue-50 py-3 px-6 rounded-xl">Lihat Semua Destinasi <ChevronRight size={18}/></Link>
               </div>
             )}
           </div>
@@ -260,7 +264,7 @@ function Domestik() {
               
               {/* PERBAIKAN LINK SEMUA PAKET */}
               {(paket.length > 4 || displayedPaket.length > 2) && (
-                <Link to="/domestik/paket" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition">
+                <Link to="/internasional/paket" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition">
                   Lihat Semua Paket <ChevronRight size={18}/>
                 </Link>
               )}
@@ -285,14 +289,14 @@ function Domestik() {
 
                  {displayedPaket.length > 1 && (
                     <div className="mt-8 flex justify-center sm:hidden">
-                      <Link to="/domestik/paket" className="flex items-center gap-2 text-[#1e3a8a] font-bold text-sm bg-blue-50 py-3 px-6 rounded-xl w-full justify-center">Lihat Semua Paket <ChevronRight size={18}/></Link>
+                      <Link to="/internasional/paket" className="flex items-center gap-2 text-[#1e3a8a] font-bold text-sm bg-blue-50 py-3 px-6 rounded-xl w-full justify-center">Lihat Semua Paket <ChevronRight size={18}/></Link>
                     </div>
                  )}
                </>
             ) : (
                <div className="text-center py-10 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">
-                 Tidak ditemukan paket wisata yang cocok dengan pencarian Anda. <br/>
-                 <button onClick={() => { setSearchDaerah(""); setSearchTipe(""); }} className="text-[#1e3a8a] font-bold mt-2">Reset Pencarian</button>
+                 Tidak ditemukan paket yang cocok dengan pencarian Anda. <br/>
+                 <button onClick={() => { setSearchKawasan(""); setSearchTipe(""); }} className="text-[#1e3a8a] font-bold mt-2">Reset Pencarian</button>
                </div>
             )}
           </div>
@@ -334,7 +338,7 @@ function Domestik() {
           )}
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
-            <div className="text-center mb-12"><h2 className="text-2xl md:text-3xl font-extrabold text-[#1e3a8a]">Mengapa Liburan<br className="md:hidden"/> Bersama Enka Mandiri?</h2></div>
+            <div className="text-center mb-12"><h2 className="text-2xl md:text-3xl font-extrabold text-[#1e3a8a]">Mengapa Liburan<br className="md:hidden"/> Bersama Enka Imron Mandiri?</h2></div>
             <div className="flex flex-wrap justify-center gap-6 md:gap-10">
               {keunggulanList.length > 0 ? keunggulanList.map((fitur) => {
                 const DynamicIcon = IconMap[fitur.icon] || Star;
@@ -351,12 +355,11 @@ function Domestik() {
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
             <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[200px] md:min-h-[250px] flex items-center ${config.ctaBgColor || 'bg-[#1e3a8a]'}`}>
-              <div className="absolute inset-0 w-full h-full"><img src={config.ctaBg || "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=2000"} className={`w-full h-full object-cover ${config.ctaBgPos || 'object-center'}`} /></div>
+              <div className="absolute inset-0 w-full h-full"><img src={config.ctaBg || "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000"} className={`w-full h-full object-cover ${config.ctaBgPos || 'object-center'}`} /></div>
               <div className={`absolute inset-0 bg-gradient-to-r ${getCtaGradient(config.ctaBgColor || 'bg-[#1e3a8a]')}`}></div>
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
               <div className="relative z-10 w-full md:w-2/3 p-8 md:p-12 text-left">
-                <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4 leading-snug">{config.ctaTitle || "Ingin Menyesuaikan Isi Paket Ini?"}</h2>
-                <p className="text-blue-100 mb-6 text-sm md:text-base max-w-xl leading-relaxed">{config.ctaDesc || "Atau ingin membuat rute perjalanan impian Anda sendiri? Konsultasikan dengan tim kami."}</p>
+                <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4 leading-snug">{config.ctaTitle || "Punya Negara Impian Sendiri?"}</h2>
+                <p className="text-blue-100 mb-6 text-sm md:text-base max-w-xl leading-relaxed">{config.ctaDesc || "Konsultasikan rute perjalanan ke negara impian Anda dengan tim ahli kami."}</p>
                 <Link to={config.ctaBtnLink || "https://wa.me/6281234567890"} target="_blank" className="inline-block bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-colors text-sm md:text-base">{config.ctaBtnText || "Konsultasi via WhatsApp"}</Link>
               </div>
             </div>
@@ -368,4 +371,4 @@ function Domestik() {
   );
 }
 
-export default Domestik;
+export default Internasional;

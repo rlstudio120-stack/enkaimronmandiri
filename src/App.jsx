@@ -9,6 +9,7 @@ import Footer from "./components/Footer";
 import Home from "./components/Home";
 import Umroh from "./components/Umroh";
 import Domestik from "./components/Domestik";
+import Internasional from "./components/Internasional";
 import PackageDetail from "./components/PackageDetail";
 import DetailDomestik from "./components/DetailDomestik"; // <-- IMPORT HALAMAN BARU DOMESTIK
 import AdminDashboard from "./components/AdminDashboard";
@@ -18,6 +19,9 @@ import News from "./components/News";
 import NewsDetail from "./components/NewsDetail"; 
 import SemuaDestinasi from "./components/SemuaDestinasi";
 import SemuaPaketUmroh from "./components/SemuaPaketUmroh";
+import SemuaDestinasiInt from "./components/SemuaDestinasiInt";
+import SemuaPaketInt from "./components/SemuaPaketInt";
+import DetailInternasional from "./components/DetailInternasional";
 
 // --- WADAH AREA PUBLIK ---
 function PublicLayout() {
@@ -64,6 +68,7 @@ function App() {
           <Route path="/umroh" element={<Umroh />} />
           <Route path="/domestik" element={<Domestik />} />
           <Route path="/domestik/destinasi" element={<SemuaDestinasi />} />
+          <Route path="/internasional" element={<Internasional />} />
           
           {/* RUTE PAKET DOMESTIK BARU */}
           <Route path="/paket/domestik/:id" element={<DetailDomestik />} />
@@ -74,6 +79,9 @@ function App() {
           <Route path="/berita" element={<News />} />
           <Route path="/berita/:id" element={<NewsDetail />} />
           <Route path="/umroh/paket" element={<SemuaPaketUmroh />} />
+          <Route path="/internasional/destinasi" element={<SemuaDestinasiInt />} />
+          <Route path="/internasional/paket" element={<SemuaPaketInt />} />
+          <Route path="/paket/internasional/:id" element={<DetailInternasional />} />
         </Route>
 
         {/* === AREA LOGIN === */}
