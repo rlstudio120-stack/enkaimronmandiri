@@ -22,6 +22,9 @@ import SemuaPaketUmroh from "./components/SemuaPaketUmroh";
 import SemuaDestinasiInt from "./components/SemuaDestinasiInt";
 import SemuaPaketInt from "./components/SemuaPaketInt";
 import DetailInternasional from "./components/DetailInternasional";
+import TentangKami from "./components/TentangKami";
+import SyaratKetentuan from "./components/SyaratKetentuan";
+import Faq from "./components/Faq";
 
 // --- WADAH AREA PUBLIK ---
 function PublicLayout() {
@@ -82,6 +85,9 @@ function App() {
           <Route path="/internasional/destinasi" element={<SemuaDestinasiInt />} />
           <Route path="/internasional/paket" element={<SemuaPaketInt />} />
           <Route path="/paket/internasional/:id" element={<DetailInternasional />} />
+          <Route path="/tentang" element={<TentangKami />} />
+          <Route path="/syarat" element={<SyaratKetentuan />} />
+          <Route path="/faq" element={<Faq />} />
         </Route>
 
         {/* === AREA LOGIN === */}

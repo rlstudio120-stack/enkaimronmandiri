@@ -4,8 +4,9 @@ import { db } from "../firebase";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   MapPin, Clock, Users, Calendar, ChevronRight, ChevronLeft,
-  Plane, Bus, TrainFront, Ship, Car, Box, Star,
-  ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, CheckCircle, Compass, Globe, Search, Tent
+  Plane, Bus, TrainFront, Ship, Car, Box, Star, Tent,
+  ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, 
+  CheckCircle, Compass, Globe, Search, MessageSquare, MessageCircle
 } from "lucide-react";
 
 const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Tent, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass };
@@ -30,7 +31,7 @@ const defaultConfig = {
 };
 
 function Home() {
-  const [activeTab, setActiveTab] = useState("Domestik");
+  const [activeTab, setActiveTab] = useState("Tanya Paket");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -138,40 +139,91 @@ function Home() {
         </div>
       </div>
 
-      {/* 2. KOTAK PENCARIAN (DESAIN ASLI DIPERTAHANKAN, FUNGSI TOMBOL DITAMBAHKAN) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-20 md:-mt-16 mb-16 md:mb-20">
+     {/* 2. KOTAK KONSULTASI & PERENCANAAN PERJALANAN (PENGGANTI PENCARIAN) */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-24 md:-mt-20 mb-16 md:mb-20">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="flex bg-[#1e3a8a]">
-            {["Domestik", "Internasional", "Umroh"].map((tab) => (
+            {["Tanya Paket", "Custom Trip", "Bantuan CS"].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3.5 md:py-4 text-xs md:text-base font-bold flex flex-col md:flex-row items-center justify-center gap-1.5 md:gap-2 transition-colors ${activeTab === tab ? "bg-white text-[#1e3a8a] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 relative" : "bg-[#1d47ad] text-white hover:bg-[#1d4ed8]"}`}>
-                {tab === "Domestik" && <MapPin size={18} />}{tab === "Internasional" && <Globe size={18} />}{tab === "Umroh" && <Box size={18} />}<span>{tab}</span>
+                {tab === "Tanya Paket" && <Search size={18} />}
+                {tab === "Custom Trip" && <MapPin size={18} />}
+                {tab === "Bantuan CS" && <MessageSquare size={18} />}
+                <span>{tab}</span>
               </button>
             ))}
           </div>
+          
           <div className="p-5 md:p-8">
-            {activeTab === "Domestik" && (
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 items-end">
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Dari Kota</label><div className="relative"><MapPin size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="text" placeholder="Contoh: Jakarta" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Tujuan Daerah</label><div className="relative"><MapPin size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="text" placeholder="Contoh: Labuan Bajo" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Bulan / Tanggal</label><div className="relative"><Calendar size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="date" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Jumlah Peserta</label><div className="relative"><Users size={16} className="absolute left-3 top-3.5 text-gray-400" /><select className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold bg-white appearance-none"><option>1 Orang (Open Trip)</option><option>Group (Private Trip)</option></select></div></div>
-                <button onClick={handleSearchSubmit} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2"><Search size={18}/> Cari Paket Trip</button>
+            {activeTab === "Tanya Paket" && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-end">
+                <div className="flex flex-col relative">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Nama Anda</label>
+                  <div className="relative">
+                    <Users size={16} className="absolute left-3 top-3.5 text-gray-400" />
+                    <input id="waNama" type="text" placeholder="Contoh: Budi" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
+                  </div>
+                </div>
+                <div className="flex flex-col relative md:col-span-2">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Destinasi yang Dicari</label>
+                  <div className="relative">
+                    <MapPin size={16} className="absolute left-3 top-3.5 text-gray-400" />
+                    <input id="waTujuan" type="text" placeholder="Contoh: Paket Umroh Agustus / Trip Bali" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
+                  </div>
+                </div>
+                <button onClick={() => {
+                  const nama = document.getElementById('waNama').value || 'Calon Jamaah';
+                  const tujuan = document.getElementById('waTujuan').value || 'paket wisata Anda';
+                  const pesan = `Halo tim Enka Imron Mandiri, perkenalkan saya *${nama}*. Saya sedang mencari informasi dan rekomendasi terkait *${tujuan}*. Bisa tolong dibantu?`;
+                  window.open(`https://wa.me/6281234567890?text=${encodeURIComponent(pesan)}`, '_blank');
+                }} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2">
+                  <Smile size={18}/> Tanya Sekarang
+                </button>
               </div>
             )}
-            {activeTab === "Internasional" && (
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 items-end">
-                <div className="flex flex-col relative md:col-span-2"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Negara Tujuan</label><div className="relative"><Globe size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="text" placeholder="Contoh: Turki, Jepang, Eropa..." className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Bulan Rencana</label><div className="relative"><Calendar size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="month" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Jumlah Peserta</label><div className="relative"><Users size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="number" placeholder="Contoh: 2" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <button onClick={handleSearchSubmit} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2"><Search size={18}/> Cari Tour Mancanegara</button>
+
+            {activeTab === "Custom Trip" && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-end">
+                <div className="flex flex-col relative md:col-span-2">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Rencana Tujuan Rombongan</label>
+                  <div className="relative">
+                    <Globe size={16} className="absolute left-3 top-3.5 text-gray-400" />
+                    <input id="customTujuan" type="text" placeholder="Contoh: Tour Jawa Bali / Eropa Barat" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
+                  </div>
+                </div>
+                <div className="flex flex-col relative">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Jumlah Rombongan</label>
+                  <div className="relative">
+                    <Users size={16} className="absolute left-3 top-3.5 text-gray-400" />
+                    <input id="customPeserta" type="number" placeholder="Contoh: 30 Orang" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
+                  </div>
+                </div>
+                <button onClick={() => {
+                  const tujuan = document.getElementById('customTujuan').value || 'destinasi pilihan saya';
+                  const peserta = document.getElementById('customPeserta').value || 'beberapa';
+                  const pesan = `Halo, saya ingin berkonsultasi untuk membuat *Custom Trip / Private Tour* ke *${tujuan}* untuk rombongan sebanyak *${peserta} orang*. Bagaimana prosedurnya?`;
+                  window.open(`https://wa.me/6281234567890?text=${encodeURIComponent(pesan)}`, '_blank');
+                }} className="w-full bg-[#1e3a8a] hover:bg-blue-800 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-blue-900/30 flex justify-center items-center gap-2">
+                  <Compass size={18}/> Buat Rute Kustom
+                </button>
               </div>
             )}
-            {activeTab === "Umroh" && (
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 items-end">
-                <div className="flex flex-col relative md:col-span-2"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Pilih Jenis Paket</label><div className="relative"><Box size={16} className="absolute left-3 top-3.5 text-gray-400" /><select className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold bg-white appearance-none"><option>Semua Paket Umroh</option><option>Umroh Reguler</option><option>Umroh Plus (Turki/Aqsa)</option><option>Umroh VIP</option></select></div></div>
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Bulan Keberangkatan</label><div className="relative"><Calendar size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="month" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <div className="flex flex-col relative"><label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Jumlah Jamaah</label><div className="relative"><Users size={16} className="absolute left-3 top-3.5 text-gray-400" /><input type="number" placeholder="Contoh: 1" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/></div></div>
-                <button onClick={handleSearchSubmit} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2"><Search size={18}/> Cari Paket Umroh</button>
+
+            {activeTab === "Bantuan CS" && (
+              <div className="flex flex-col md:flex-row items-center justify-between bg-blue-50 p-4 md:p-6 rounded-xl border border-blue-100">
+                <div className="flex items-center gap-4 mb-4 md:mb-0">
+                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shrink-0 shadow-md">
+                    <MessageCircle size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#1e3a8a] text-sm md:text-base">Butuh Bantuan Langsung?</h4>
+                    <p className="text-xs md:text-sm text-gray-600">Tim Customer Service kami siap membantu merencanakan perjalanan Anda atau menjawab pertanyaan seputar fasilitas dan dokumen.</p>
+                  </div>
+                </div>
+                <button onClick={() => {
+                  window.open(`https://wa.me/6281234567890?text=${encodeURIComponent("Halo Admin Enka Imron Mandiri, saya butuh bantuan informasi terkait layanan travel Anda.")}`, '_blank');
+                }} className="w-full md:w-auto bg-[#25D366] hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl transition text-sm shadow-lg shadow-green-500/30 flex justify-center items-center gap-2 shrink-0 whitespace-nowrap">
+                  <MessageCircle size={18}/> Chat Admin (Online)
+                </button>
               </div>
             )}
           </div>
