@@ -4,18 +4,17 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { 
   MapPin, Clock, Users, ArrowLeft, ChevronRight, 
-  Plane, Bus, TrainFront, Ship, Car, Box, ChevronDown, ChevronUp, CheckCircle
+  Plane, Bus, TrainFront, Ship, Car, Box, ChevronDown, ChevronUp, CheckCircle, Building
 } from "lucide-react";
 
 const getTransportIcon = (jenis) => {
-  switch(jenis) {
-    case "Pesawat": return Plane;
-    case "Kereta": return TrainFront;
-    case "Kapal": return Ship;
-    case "Shuttle": return Car;
-    case "Jeep": return Car;
-    default: return Bus;
-  }
+  if (!jenis) return Bus;
+  const j = jenis.toLowerCase();
+  if (j.includes("pesawat") || j.includes("flight")) return Plane;
+  if (j.includes("kereta")) return TrainFront;
+  if (j.includes("kapal") || j.includes("boat")) return Ship;
+  if (j.includes("shuttle") || j.includes("jeep") || j.includes("mobil")) return Car;
+  return Bus;
 };
 
 function DetailDomestik() {
@@ -71,16 +70,13 @@ function DetailDomestik() {
   if (!paket) return <div className="min-h-screen flex flex-col justify-center items-center pt-20"><h2 className="text-2xl font-bold mb-4">Paket Tidak Ditemukan</h2><button onClick={() => navigate(-1)} className="bg-[#1e3a8a] text-white px-6 py-2 rounded-xl">Kembali</button></div>;
 
   return (
-    // PERUBAHAN: Menambahkan pt-28 untuk memberi jarak dari navbar
     <div className="pt-28 pb-20 bg-slate-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* PERUBAHAN: Tombol kembali dipindah ke luar kotak gambar */}
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-[#1e3a8a] font-bold mb-6 transition-colors">
           <ArrowLeft size={18} /> Kembali ke Pilihan Paket
         </button>
 
-        {/* PERUBAHAN: Gambar dibungkus kotak (rounded-3xl) dan diberi shadow */}
         <div className="relative w-full h-[350px] md:h-[450px] rounded-3xl overflow-hidden mb-10 shadow-lg bg-[#0f172a]">
           <img src={paket.image} alt={paket.title} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/90 via-[#0f172a]/40 to-transparent"></div>
@@ -153,18 +149,25 @@ function DetailDomestik() {
                   <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Clock size={20}/></div>
                   <div><p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Durasi Trip</p><p className="text-sm font-semibold text-gray-800 mt-0.5">{paket.duration || "-"}</p></div>
                 </div>
+                
+                {/* PERBAIKAN IKON HOTEL */}
                 {paket.hotel && (
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Box size={20}/></div>
+                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Building size={20}/></div>
                     <div><p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Penginapan</p><p className="text-sm font-semibold text-gray-800 mt-0.5">{paket.hotel}</p></div>
                   </div>
                 )}
+                
+                {/* PERBAIKAN LOGIKA TRANSPORTASI */}
                 {(paket.transportasi || []).map((tr, idx) => {
                   const TransportIcon = getTransportIcon(tr.jenis);
                   return (
                     <div key={idx} className="flex items-start gap-4">
                       <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><TransportIcon size={20}/></div>
-                      <div><p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{tr.jenis}</p><p className="text-sm font-semibold text-gray-800 mt-0.5">{tr.deskripsi || "Termasuk"}</p></div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{tr.jenis}</p>
+                        <p className="text-sm font-semibold text-gray-800 mt-0.5">{tr.deskripsi || "Termasuk"}</p>
+                      </div>
                     </div>
                   );
                 })}

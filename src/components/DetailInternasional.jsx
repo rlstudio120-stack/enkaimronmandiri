@@ -4,18 +4,18 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { 
   Globe, Clock, Users, ArrowLeft, ChevronRight, 
-  Plane, Bus, TrainFront, Ship, Car, Box, ChevronDown, ChevronUp
+  Plane, Bus, TrainFront, Ship, Car, Box, ChevronDown, ChevronUp, Building
 } from "lucide-react";
 
+// PERBAIKAN: Logika Transport yang lebih cerdas (agar ikon cocok dengan deskripsi)
 const getTransportIcon = (jenis) => {
-  switch(jenis) {
-    case "Pesawat": return Plane;
-    case "Kereta": return TrainFront;
-    case "Kapal": return Ship;
-    case "Shuttle": return Car;
-    case "Jeep": return Car;
-    default: return Bus;
-  }
+  if (!jenis) return Plane;
+  const j = jenis.toLowerCase();
+  if (j.includes("pesawat") || j.includes("flight")) return Plane;
+  if (j.includes("kereta")) return TrainFront;
+  if (j.includes("kapal") || j.includes("boat")) return Ship;
+  if (j.includes("shuttle") || j.includes("jeep") || j.includes("mobil")) return Car;
+  return Bus;
 };
 
 function DetailInternasional() {
@@ -131,18 +131,31 @@ function DetailInternasional() {
                   <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Clock size={20}/></div>
                   <div><p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Durasi Trip</p><p className="text-sm font-semibold text-gray-800 mt-0.5">{paket.duration || "-"}</p></div>
                 </div>
+                
+                {/* PERBAIKAN: Ikon Hotel diubah menjadi Building */}
                 {paket.hotel && (
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Box size={20}/></div>
+                    <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Building size={20}/></div>
                     <div><p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Penginapan</p><p className="text-sm font-semibold text-gray-800 mt-0.5">{paket.hotel}</p></div>
                   </div>
                 )}
+
+                {/* PERBAIKAN: Logika Penamaan Transportasi */}
                 {(paket.transportasi || []).map((tr, idx) => {
                   const TransportIcon = getTransportIcon(tr.jenis);
                   return (
                     <div key={idx} className="flex items-start gap-4">
                       <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><TransportIcon size={20}/></div>
-                      <div><p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{tr.jenis}</p><p className="text-sm font-semibold text-gray-800 mt-0.5">{tr.deskripsi || "Termasuk"}</p></div>
+                      <div>
+                        {/* Jika deskripsi diisi, tampilkan Jenis sebagai judul kecil, deskripsi sebagai tebal */}
+                        {/* Jika deskripsi kosong, tampilkan tulisan "Armada" sebagai judul kecil, Jenis sebagai tebal */}
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                          {tr.deskripsi ? tr.jenis : "Armada Transport"}
+                        </p>
+                        <p className="text-sm font-semibold text-gray-800 mt-0.5">
+                          {tr.deskripsi ? tr.deskripsi : tr.jenis}
+                        </p>
+                      </div>
                     </div>
                   );
                 })}
