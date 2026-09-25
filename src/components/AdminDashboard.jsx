@@ -6,12 +6,13 @@ import {
   Activity, ArrowLeft, LayoutTemplate, Database, FileText, MonitorSmartphone, Info,
   ChevronDown, ChevronRight, Building, Banknote, Coins, Wallet, CircleDollarSign, Map, 
   Calendar, Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, ShoppingBag, 
-  Utensils, Wifi, Landmark, Ticket, Info as InfoIcon, Search
+  Utensils, Wifi, Landmark, Ticket, Info as InfoIcon, Search, UserPlus, Key
 } from "lucide-react";
 import JoditEditor from "jodit-react";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where } from "firebase/firestore";
+import { initializeApp, getApps } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase"; 
-import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Tent, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass, BookOpen, Ship, TrainFront, FileText, Building, Banknote, Coins, Wallet, CircleDollarSign, Map, Calendar, Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, ShoppingBag, Utensils, Wifi, Landmark, Ticket };
@@ -19,6 +20,9 @@ const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, User
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
+
+  // State Role & Info User yang sedang Login
+  const [currentUserInfo, setCurrentUserInfo] = useState({ email: "", role: "Super Admin", name: "Admin Utama" });
 
   const [openMenus, setOpenMenus] = useState({ paket: false, web: false, master: false, profil: false });
   const toggleMenu = (menuName) => setOpenMenus(prev => ({ ...prev, [menuName]: !prev[menuName] }));
@@ -32,17 +36,37 @@ function AdminDashboard() {
   const [dataList, setDataList] = useState([]);
   const [daerahOptions, setDaerahOptions] = useState([]);
   const [daerahIntOptions, setDaerahIntOptions] = useState([]); 
-  const [umrohPromoOptions, setUmrohPromoOptions] = useState([]);
+  const [allPromoOptions, setAllPromoOptions] = useState({ umroh: [], domestik: [], internasional: [] });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [customAlert, setCustomAlert] = useState({ show: false, message: "", type: "info", onConfirm: null });
   const [stats, setStats] = useState({ umroh: 0, domestik: 0, internasional: 0, testimoni: 0, berita: 0 });
 
-  // FITUR PENCARIAN TABEL (BARU)
+  // FITUR PENCARIAN TABEL
   const [searchQuery, setSearchQuery] = useState("");
-  // Reset pencarian tiap kali pindah tab menu
   useEffect(() => { setSearchQuery(""); }, [activeTab]);
+
+  // Cek Role User yang sedang login
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const q = query(collection(db, "users_admin"), where("email", "==", user.email));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const userData = snap.docs[0].data();
+            setCurrentUserInfo({ email: user.email, role: userData.role || "Super Admin", name: userData.name || user.email });
+          } else {
+            setCurrentUserInfo({ email: user.email, role: "Super Admin", name: "Super Admin" });
+          }
+        } catch (err) {
+          console.error("Gagal cek role user:", err);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // ================= TEMPLATE DATA & CONFIGURATIONS =================
   const initialUmroh = { title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", keretaCepat: "tidak", tampilBadge: "ya", badge: "Tidak Ada", badgeColor: "", image: "", deskripsi: "", informasiTambahan: [] };
@@ -58,8 +82,14 @@ function AdminDashboard() {
   const initialLayanan = { title: "", deskripsi: "", image: "", icon: "Plane", color: "bg-[#1e3a8a]", link: "/domestik" };
   const initialTestimoni = { name: "", service: "Paket Umroh", img: "", text: "", stars: "5" };
   const initialFaq = { pertanyaan: "", jawaban: "", kategori: "Umum" };
+  const initialUser = { name: "", email: "", password: "", role: "Admin Paket", status: "Aktif" };
 
-  const initialIdentitas = { namaBesar: "ENKA IMRON MANDIRI", tagline: "Travel Domestik • Internasional • Umroh", taglineSize: "text-[8px] md:text-[9px]", lisensi: "Berizin Resmi Kemenag RI No. 1234 Tahun 2024", topBarKanan: "Layanan Pelanggan: 08.00 - 17.00 WIB", logoNavbar: "", logoFooter: "" };
+  const initialIdentitas = { 
+    namaBesar: "ENKA IMRON MANDIRI", tagline: "Travel Domestik • Internasional • Umroh", taglineSize: "text-[8px] md:text-[9px]", 
+    lisensi: "Berizin Resmi Kemenag RI No. 1234 Tahun 2024", lisensiIcon: "ShieldCheck",
+    topBarKanan: "Layanan Pelanggan: 08.00 - 17.00 WIB", topBarKananIcon: "Clock",
+    logoNavbar: "", logoFooter: "", faviconMode: "logoNavbar", customFavicon: "" 
+  };
   const initialFooter = { desc: "Melayani perjalanan Domestik, Internasional, dan Umroh dengan penuh amanah dan profesionalisme.", socials: [], contacts: [{ tipe: "Alamat", isi: "Jl. Raya Condet No. 18" }], copyright: "© 2026 Enka Imron Mandiri. All rights reserved." };
   const initialConfig = { heroTitle: "Perjalanan Anda,\nAmanah Kami", heroDesc: "Melayani perjalanan Domestik, Internasional, dan Umroh.", heroBg: "", showBadges: "ya", heroTitleSize: "text-[32px] md:text-5xl lg:text-6xl", heroBgPos: "bg-center", b1Text: "Terpercaya", b1Icon: "ShieldCheck", b2Text: "Harga Terbaik", b2Icon: "Star", b3Text: "Pelayanan Prima", b3Icon: "Heart", promoBg: "", promoSmall: "Paket Umroh 2024", promoTitle: "Berangkat Nyaman,\nIbadah Khusyuk", promoBtn: "Cek Promo", promoPrice: "25", promoLink: "/umroh", promoBgColor: "bg-[#0f172a]", promoBgPos: "object-center", testiAutoSlide: "ya" };
   const initialUmrohConfig = { heroSmallText: "Perjalanan Ibadah", heroSmallTextSize: "text-[10px] md:text-sm", heroTitle: "Perjalanan Umroh Nyaman", heroDesc: "Pengalaman ibadah yang nyaman.", heroBg: "", heroTitleSize: "text-[32px] md:text-5xl lg:text-6xl", heroBgPos: "bg-center", f1Text: "Amanah", f1Icon: "ShieldCheck", f2Text: "Pembimbing", f2Icon: "Users", f3Text: "Terbaik", f3Icon: "Star", ctaBg: "", ctaTitle: "Siap Berangkat?", ctaDesc: "Hubungi kami.", ctaBtnText: "Hubungi Kami", ctaBtnLink: "#", ctaBgColor: "bg-[#0f172a]", ctaBgPos: "object-center" };
@@ -81,6 +111,7 @@ function AdminDashboard() {
   const [formLayanan, setFormLayanan] = useState(initialLayanan);
   const [formTestimoni, setFormTestimoni] = useState(initialTestimoni);
   const [formFaq, setFormFaq] = useState(initialFaq);
+  const [formUser, setFormUser] = useState(initialUser);
   
   const [formIdentitas, setFormIdentitas] = useState(initialIdentitas);
   const [formFooter, setFormFooter] = useState(initialFooter);
@@ -104,7 +135,22 @@ function AdminDashboard() {
     
     if (activeTab === "config_identitas") { const snap = await getDoc(doc(db, "settings", "identitas")); if (snap.exists()) setFormIdentitas({ ...initialIdentitas, ...snap.data() }); return; }
     if (activeTab === "config_footer") { const snap = await getDoc(doc(db, "settings", "footer")); if (snap.exists()) setFormFooter({ ...initialFooter, ...snap.data() }); return; }
-    if (activeTab === "config") { const snap = await getDoc(doc(db, "settings", "home")); if (snap.exists()) setFormConfig({ ...initialConfig, ...snap.data() }); const uSnap = await getDocs(collection(db, "paket_umroh")); setUmrohPromoOptions(uSnap.docs.map(d => ({ id: d.id, title: d.data().title }))); return; }
+    
+    // PERBAIKAN: Ambil semua paket (Umroh, Domestik, Internasional) untuk pilihan Link Banner Promo
+    if (activeTab === "config") { 
+      const snap = await getDoc(doc(db, "settings", "home")); 
+      if (snap.exists()) setFormConfig({ ...initialConfig, ...snap.data() }); 
+      const uSnap = await getDocs(collection(db, "paket_umroh")); 
+      const dSnap = await getDocs(collection(db, "paket_domestik")); 
+      const iSnap = await getDocs(collection(db, "paket_internasional")); 
+      setAllPromoOptions({
+        umroh: uSnap.docs.map(d => ({ id: d.id, title: d.data().title })),
+        domestik: dSnap.docs.map(d => ({ id: d.id, title: d.data().title })),
+        internasional: iSnap.docs.map(d => ({ id: d.id, title: d.data().title }))
+      });
+      return; 
+    }
+
     if (activeTab === "config_umroh") { const snap = await getDoc(doc(db, "settings", "umroh")); if (snap.exists()) setFormUmrohConfig({ ...initialUmrohConfig, ...snap.data() }); return; }
     if (activeTab === "config_domestik") { const snap = await getDoc(doc(db, "settings", "domestik")); if (snap.exists()) setFormDomestikConfig({ ...initialDomestikConfig, ...snap.data() }); return; }
     if (activeTab === "config_internasional") { const snap = await getDoc(doc(db, "settings", "internasional")); if (snap.exists()) setFormInternasionalConfig({ ...initialInternasionalConfig, ...snap.data() }); return; } 
@@ -125,6 +171,7 @@ function AdminDashboard() {
     if (activeTab === "layanan") colName = "layanan_utama"; 
     if (activeTab === "testimoni") colName = "testimoni_pelanggan"; 
     if (activeTab === "faq") colName = "faq"; 
+    if (activeTab === "users") colName = "users_admin"; 
 
     if(colName) { const snapshot = await getDocs(collection(db, colName)); setDataList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); }
   };
@@ -153,7 +200,6 @@ function AdminDashboard() {
   const handleRemoveInfo = (setForm, formState, index) => { const newArr = [...formState.informasiTambahan]; newArr.splice(index, 1); setForm({...formState, informasiTambahan: newArr}); };
   const handleUpdateInfo = (setForm, formState, index, field, value) => { const newArr = [...formState.informasiTambahan]; newArr[index][field] = value; setForm({...formState, informasiTambahan: newArr}); };
 
-  // Handler Array Footer Sosial Media
   const handleAddSocial = () => setFormFooter({...formFooter, socials: [...(formFooter.socials || []), { platform: "Instagram", link: "" }]});
   const handleUpdateSocial = (i, f, v) => { const arr = [...formFooter.socials]; arr[i][f] = v; setFormFooter({...formFooter, socials: arr}); };
   const handleRemoveSocial = (i) => { const arr = [...formFooter.socials]; arr.splice(i, 1); setFormFooter({...formFooter, socials: arr}); };
@@ -179,6 +225,7 @@ function AdminDashboard() {
     else if (activeTab === "layanan") setFormLayanan(initialLayanan); 
     else if (activeTab === "testimoni") setFormTestimoni(initialTestimoni); 
     else if (activeTab === "faq") setFormFaq(initialFaq); 
+    else if (activeTab === "users") setFormUser(initialUser); 
     setIsFormOpen(true); 
   };
 
@@ -197,6 +244,7 @@ function AdminDashboard() {
     else if (activeTab === "layanan") setFormLayanan({...initialLayanan, ...item}); 
     else if (activeTab === "testimoni") setFormTestimoni({...initialTestimoni, ...item}); 
     else if (activeTab === "faq") setFormFaq({...initialFaq, ...item}); 
+    else if (activeTab === "users") setFormUser({...initialUser, ...item, password: ""}); 
     setIsFormOpen(true); 
   };
 
@@ -232,7 +280,22 @@ function AdminDashboard() {
 
   const handleTestiImage = async (e) => { const file = e.target.files[0]; if (!file) return; setIsUploading(true); const formData = new FormData(); formData.append("file", file); formData.append("upload_preset", "ed8ovogp"); try { const response = await fetch(`https://api.cloudinary.com/v1_1/h8p2mssb/image/upload`, { method: "POST", body: formData }); const data = await response.json(); if (data.secure_url) setFormTestimoni({ ...formTestimoni, img: data.secure_url }); } catch (error) {} finally { setIsUploading(false); } };
 
-  const handleSaveIdentitas = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "identitas"), formIdentitas); showAlert("Identitas & Top Bar Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
+  const handleSaveIdentitas = async (e) => { 
+    e.preventDefault(); setIsSubmitting(true); 
+    try { 
+      await setDoc(doc(db, "settings", "identitas"), formIdentitas); 
+      // Terapkan langsung favicon baru di browser
+      const favUrl = formIdentitas.faviconMode === "logoFooter" ? formIdentitas.logoFooter 
+                   : formIdentitas.faviconMode === "custom" ? formIdentitas.customFavicon 
+                   : formIdentitas.logoNavbar;
+      if (favUrl) {
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
+        link.href = favUrl;
+      }
+      showAlert("Identitas, Favicon & Top Bar Disimpan!", "success"); 
+    } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } 
+  };
   const handleSaveFooter = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "footer"), formFooter); showAlert("Pengaturan Footer Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
   const handleSaveConfig = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "home"), formConfig); showAlert("Pengaturan Beranda Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
   const handleSaveUmrohConfig = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "umroh"), formUmrohConfig); showAlert("Pengaturan Umroh Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
@@ -243,6 +306,48 @@ function AdminDashboard() {
   
   const handleSubmit = async (e) => { 
     e.preventDefault(); setIsSubmitting(true); 
+
+    // KHUSUS MANAJEMEN USER & ROLE (Membuat Akun Firebase Auth Tanpa Logout Admin Saat Ini)
+    if (activeTab === "users") {
+      try {
+        if (editId) {
+          await updateDoc(doc(db, "users_admin", editId), {
+            name: formUser.name,
+            email: formUser.email,
+            role: formUser.role,
+            status: formUser.status
+          });
+          showAlert("Role & Data User diperbarui.", "success");
+        } else {
+          const secondaryAppName = "SecondaryApp";
+          let secondaryApp = getApps().find(app => app.name === secondaryAppName);
+          if (!secondaryApp) {
+            secondaryApp = initializeApp(auth.app.options, secondaryAppName);
+          }
+          const secondaryAuth = getAuth(secondaryApp);
+          const userCred = await createUserWithEmailAndPassword(secondaryAuth, formUser.email, formUser.password);
+          await signOut(secondaryAuth);
+
+          await addDoc(collection(db, "users_admin"), {
+            uid: userCred.user.uid,
+            name: formUser.name,
+            email: formUser.email,
+            role: formUser.role,
+            status: formUser.status,
+            createdAt: new Date().toISOString().split('T')[0]
+          });
+          showAlert("Akun User Baru berhasil dibuat dan siap digunakan login!", "success");
+        }
+        setIsFormOpen(false);
+        fetchData();
+      } catch (error) {
+        showAlert("Gagal membuat user: " + (error.message || "Pastikan email valid & password min. 6 karakter."), "error");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     let colName = "paket_umroh"; let dataToSave = formUmroh; 
     if (activeTab === "domestik") { colName = "paket_domestik"; dataToSave = formDomestik; } 
     if (activeTab === "internasional") { colName = "paket_internasional"; dataToSave = formInternasional; } 
@@ -265,7 +370,7 @@ function AdminDashboard() {
   };
 
   const confirmDelete = (id) => { 
-    showAlert("Yakin ingin menghapus?", "confirm", async () => { 
+    showAlert("Yakin ingin menghapus data ini?", "confirm", async () => { 
       let colName = "paket_umroh"; 
       if (activeTab === "domestik") colName = "paket_domestik"; 
       if (activeTab === "internasional") colName = "paket_internasional"; 
@@ -279,12 +384,13 @@ function AdminDashboard() {
       if (activeTab === "layanan") colName = "layanan_utama"; 
       if (activeTab === "testimoni") colName = "testimoni_pelanggan"; 
       if (activeTab === "faq") colName = "faq"; 
+      if (activeTab === "users") colName = "users_admin"; 
       await deleteDoc(doc(db, colName, id)); fetchData(); fetchDaerahOptions(); showAlert("Dihapus.", "success"); 
     }); 
   };
 
   const inputClass = "w-full border border-gray-200 p-3 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-sm";
-  const labelClass = "text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide";
+  const labelClass = "text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide block";
   const titleSizeOptions = <><option value="text-[28px] md:text-4xl lg:text-5xl">Sedang</option><option value="text-[32px] md:text-5xl lg:text-6xl">Besar (Standar)</option><option value="text-[36px] md:text-6xl lg:text-7xl">Sangat Besar</option></>;
   const smallTextSizeOptions = <><option value="text-[10px] md:text-xs">Kecil</option><option value="text-[10px] md:text-sm">Sedang (Standar)</option><option value="text-xs md:text-base">Besar</option></>;
   const bgPosOptions = <><option value="bg-top">Fokus Atas</option><option value="bg-center">Fokus Tengah (Standar)</option><option value="bg-bottom">Fokus Bawah (Pemandangan)</option></>;
@@ -296,7 +402,7 @@ function AdminDashboard() {
     return (
       <button type="button" onClick={() => openIconModal(setIconFn)} className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-colors focus:outline-none w-full md:w-auto">
         <IconComp size={22} className="text-[#1e3a8a]" />
-        <span className="text-sm font-semibold text-gray-700">Pilih Ikon Baru</span>
+        <span className="text-sm font-semibold text-gray-700">Pilih Ikon ({currentIcon || "Default"})</span>
       </button>
     );
   };
@@ -307,13 +413,17 @@ function AdminDashboard() {
   const isUmrohSetting = ["config_umroh", "keunggulan_umroh"].includes(activeTab);
   const isDomestikSetting = ["config_domestik", "keunggulan_domestik"].includes(activeTab);
   const isInternasionalSetting = ["config_internasional", "keunggulan_internasional"].includes(activeTab);
-  const isProfilSetting = ["tentang", "syarat", "faq"].includes(activeTab);
 
-  // LOGIKA PENCARIAN DATA
+  // Hak Akses Menu Berdasarkan Role
+  const canAccessPaket = ["Super Admin", "Admin Paket"].includes(currentUserInfo.role);
+  const canAccessWeb = ["Super Admin"].includes(currentUserInfo.role);
+  const canAccessBerita = ["Super Admin", "Editor Berita"].includes(currentUserInfo.role);
+  const canAccessUsers = ["Super Admin"].includes(currentUserInfo.role);
+
   const filteredDataList = dataList.filter((item) => {
     if (!searchQuery) return true;
     const searchLower = searchQuery.toLowerCase();
-    return (item.title || item.name || item.pertanyaan || "").toLowerCase().includes(searchLower);
+    return (item.title || item.name || item.pertanyaan || item.email || "").toLowerCase().includes(searchLower);
   });
 
   return (
@@ -323,7 +433,10 @@ function AdminDashboard() {
       <div className="w-64 bg-[#0f172a] text-white flex flex-col shadow-2xl z-20 shrink-0">
         <div className="p-6 flex items-center gap-3 border-b border-slate-800">
           <div className="bg-blue-600 p-2 rounded-lg"><LayoutDashboard size={20}/></div>
-          <div><h2 className="text-base font-bold">Workspace</h2><p className="text-[10px] text-slate-400">Enka Imron Mandiri</p></div>
+          <div className="overflow-hidden">
+            <h2 className="text-base font-bold truncate">{currentUserInfo.name}</h2>
+            <p className="text-[10px] text-[#f59e0b] font-bold uppercase tracking-wider">{currentUserInfo.role}</p>
+          </div>
         </div>
         
         <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
@@ -332,56 +445,77 @@ function AdminDashboard() {
           </button>
 
           {/* 1. AKORDION MANAJEMEN PAKET */}
-          <div className="mt-2">
-            <button onClick={() => toggleMenu('paket')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
-              <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Manajemen Paket</span>
-              <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.paket ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
-            </button>
-            <div className={`overflow-hidden transition-all duration-300 ${openMenus.paket ? 'max-h-48' : 'max-h-0'}`}>
-              <button onClick={() => setActiveTab("umroh")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "umroh" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><Tent size={18} /><span className="text-[13px] truncate">Paket Umroh</span></button>
-              <button onClick={() => setActiveTab("domestik")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "domestik" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MapPin size={18} /><span className="text-[13px] truncate">Paket Domestik</span></button>
-              <button onClick={() => setActiveTab("internasional")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "internasional" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><Globe size={18} /><span className="text-[13px] truncate">Paket Internasional</span></button>
+          {canAccessPaket && (
+            <div className="mt-2">
+              <button onClick={() => toggleMenu('paket')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
+                <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Manajemen Paket</span>
+                <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.paket ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
+              </button>
+              <div className={`overflow-hidden transition-all duration-300 ${openMenus.paket ? 'max-h-48' : 'max-h-0'}`}>
+                <button onClick={() => setActiveTab("umroh")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "umroh" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><Tent size={18} /><span className="text-[13px] truncate">Paket Umroh</span></button>
+                <button onClick={() => setActiveTab("domestik")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "domestik" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MapPin size={18} /><span className="text-[13px] truncate">Paket Domestik</span></button>
+                <button onClick={() => setActiveTab("internasional")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "internasional" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><Globe size={18} /><span className="text-[13px] truncate">Paket Internasional</span></button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 2. AKORDION PENGATURAN WEBSITE */}
-          <div className="mt-2">
-            <button onClick={() => toggleMenu('web')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
-              <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Pengaturan Website</span>
-              <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.web ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
-            </button>
-            <div className={`overflow-hidden transition-all duration-300 ${openMenus.web ? 'max-h-72' : 'max-h-0'}`}>
-              <button onClick={() => setActiveTab("config_identitas")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "config_identitas" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><ShieldCheck size={18} /><span className="text-[13px] truncate">Identitas & Top Bar</span></button>
-              <button onClick={() => setActiveTab("web_settings")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "web_settings" || isHomeSetting || isUmrohSetting || isDomestikSetting || isInternasionalSetting ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><LayoutTemplate size={18} /><span className="text-[13px] truncate">Tampilan Web & CTA</span></button>
-              <button onClick={() => setActiveTab("config_footer")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "config_footer" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MonitorSmartphone size={18} /><span className="text-[13px] truncate">Pengaturan Footer</span></button>
-              <button onClick={() => setActiveTab("berita")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "berita" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><FileText size={18} /><span className="text-[13px] truncate">Berita & Artikel</span></button>
+          {(canAccessWeb || canAccessBerita) && (
+            <div className="mt-2">
+              <button onClick={() => toggleMenu('web')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
+                <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Pengaturan & Konten</span>
+                <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.web ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
+              </button>
+              <div className={`overflow-hidden transition-all duration-300 ${openMenus.web ? 'max-h-72' : 'max-h-0'}`}>
+                {canAccessWeb && (
+                  <>
+                    <button onClick={() => setActiveTab("config_identitas")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "config_identitas" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><ShieldCheck size={18} /><span className="text-[13px] truncate">Identitas & Top Bar</span></button>
+                    <button onClick={() => setActiveTab("web_settings")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "web_settings" || isHomeSetting || isUmrohSetting || isDomestikSetting || isInternasionalSetting ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><LayoutTemplate size={18} /><span className="text-[13px] truncate">Tampilan Web & CTA</span></button>
+                    <button onClick={() => setActiveTab("config_footer")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "config_footer" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MonitorSmartphone size={18} /><span className="text-[13px] truncate">Pengaturan Footer</span></button>
+                  </>
+                )}
+                {canAccessBerita && (
+                  <button onClick={() => setActiveTab("berita")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "berita" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><FileText size={18} /><span className="text-[13px] truncate">Berita & Artikel</span></button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 3. AKORDION PROFIL & BANTUAN */}
-          <div className="mt-2">
-            <button onClick={() => toggleMenu('profil')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
-              <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Halaman Profil & Info</span>
-              <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.profil ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
-            </button>
-            <div className={`overflow-hidden transition-all duration-300 ${openMenus.profil ? 'max-h-48' : 'max-h-0'}`}>
-              <button onClick={() => setActiveTab("tentang")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "tentang" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><InfoIcon size={18} /><span className="text-[13px] truncate">Tentang Kami</span></button>
-              <button onClick={() => setActiveTab("syarat")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "syarat" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><FileText size={18} /><span className="text-[13px] truncate">Syarat & Ketentuan</span></button>
-              <button onClick={() => setActiveTab("faq")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "faq" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MessageSquare size={18} /><span className="text-[13px] truncate">Manajemen FAQ</span></button>
+          {canAccessWeb && (
+            <div className="mt-2">
+              <button onClick={() => toggleMenu('profil')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
+                <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Halaman Profil & Info</span>
+                <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.profil ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
+              </button>
+              <div className={`overflow-hidden transition-all duration-300 ${openMenus.profil ? 'max-h-48' : 'max-h-0'}`}>
+                <button onClick={() => setActiveTab("tentang")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "tentang" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><InfoIcon size={18} /><span className="text-[13px] truncate">Tentang Kami</span></button>
+                <button onClick={() => setActiveTab("syarat")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "syarat" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><FileText size={18} /><span className="text-[13px] truncate">Syarat & Ketentuan</span></button>
+                <button onClick={() => setActiveTab("faq")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "faq" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MessageSquare size={18} /><span className="text-[13px] truncate">Manajemen FAQ</span></button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* 4. AKORDION MASTER DATA */}
-          <div className="mt-2">
-            <button onClick={() => toggleMenu('master')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
-              <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Master Data</span>
-              <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.master ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
-            </button>
-            <div className={`overflow-hidden transition-all duration-300 ${openMenus.master ? 'max-h-48' : 'max-h-0'}`}>
-              <button onClick={() => setActiveTab("daerah")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "daerah" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MapPin size={18} /><span className="text-[13px] truncate">Kawasan Domestik</span></button>
-              <button onClick={() => setActiveTab("daerah_internasional")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "daerah_internasional" ? "border-blue-500 text-white font-bold bg-white/5 shadow-[inset_4px_0px_10px_rgba(0,0,0,0.1)]" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><Globe size={18} /><span className="text-[13px] truncate">Kawasan Internasional</span></button>
+          {/* 4. AKORDION MASTER DATA & USER */}
+          {(canAccessPaket || canAccessUsers) && (
+            <div className="mt-2">
+              <button onClick={() => toggleMenu('master')} className="w-full flex items-center justify-between px-6 py-2.5 text-slate-400 hover:text-[#f59e0b] transition-colors focus:outline-none group">
+                <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Master Data & Akses</span>
+                <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.master ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
+              </button>
+              <div className={`overflow-hidden transition-all duration-300 ${openMenus.master ? 'max-h-60' : 'max-h-0'}`}>
+                {canAccessPaket && (
+                  <>
+                    <button onClick={() => setActiveTab("daerah")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "daerah" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MapPin size={18} /><span className="text-[13px] truncate">Kawasan Domestik</span></button>
+                    <button onClick={() => setActiveTab("daerah_internasional")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "daerah_internasional" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><Globe size={18} /><span className="text-[13px] truncate">Kawasan Internasional</span></button>
+                  </>
+                )}
+                {canAccessUsers && (
+                  <button onClick={() => setActiveTab("users")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "users" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><UserPlus size={18} /><span className="text-[13px] truncate">Manajemen User & Role</span></button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </nav>
         
         <div className="p-4 border-t border-slate-800">
@@ -395,13 +529,14 @@ function AdminDashboard() {
           <div>
             <h1 className="text-2xl font-bold text-gray-800 capitalize">
               {activeTab === "dashboard" ? "Dashboard Sistem" 
-                : activeTab === "config_identitas" ? "Pengaturan Identitas Perusahaan"
+                : activeTab === "config_identitas" ? "Pengaturan Identitas, Favicon & Top Bar"
                 : activeTab === "config_footer" ? "Pengaturan Footer Website"
                 : activeTab === "web_settings" ? "Pusat Pengaturan Tampilan Web" 
                 : activeTab === "berita" ? "Pusat Berita & Artikel Web" 
                 : activeTab === "tentang" ? "Profil & Tentang Kami"
                 : activeTab === "syarat" ? "Halaman Syarat & Ketentuan"
                 : activeTab === "faq" ? "Manajemen FAQ (Tanya Jawab)"
+                : activeTab === "users" ? "Manajemen User & Hak Akses (Role)"
                 : isHomeSetting ? "Pengaturan Halaman Beranda" 
                 : isUmrohSetting ? "Pengaturan Halaman Umroh" 
                 : isDomestikSetting ? "Pengaturan Halaman Domestik" 
@@ -410,7 +545,9 @@ function AdminDashboard() {
             </h1>
           </div>
           {!noTablePages.includes(activeTab) && (
-            <button onClick={openAddModal} className="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition hover:bg-blue-800"><Plus size={18} />Tambah Data</button>
+            <button onClick={openAddModal} className="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition hover:bg-blue-800">
+              <Plus size={18} /> {activeTab === "users" ? "Tambah User Baru" : "Tambah Data"}
+            </button>
           )}
         </header>
 
@@ -419,13 +556,13 @@ function AdminDashboard() {
           {/* DASHBOARD OVERVIEW */}
           {activeTab === "dashboard" && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-[#1e3a8a] to-blue-600 rounded-3xl p-8 md:p-10 text-white shadow-xl relative overflow-hidden"><div className="absolute top-0 right-0 opacity-10 w-64 h-64 bg-white rounded-full -mr-20 -mt-20"></div><div className="relative z-10"><p className="text-blue-200 font-semibold tracking-wider text-sm mb-2 uppercase">Workspace System</p><h2 className="text-3xl md:text-4xl font-bold mb-3">Selamat Datang, Admin! 👋</h2><p className="text-blue-100 text-sm md:text-base max-w-xl leading-relaxed">Pantau kinerja website, kelola paket perjalanan, dan perbarui informasi jamaah Anda dari satu panel kontrol yang elegan.</p></div></div>
+              <div className="bg-gradient-to-r from-[#1e3a8a] to-blue-600 rounded-3xl p-8 md:p-10 text-white shadow-xl relative overflow-hidden"><div className="absolute top-0 right-0 opacity-10 w-64 h-64 bg-white rounded-full -mr-20 -mt-20"></div><div className="relative z-10"><p className="text-blue-200 font-semibold tracking-wider text-sm mb-2 uppercase">Workspace System • {currentUserInfo.role}</p><h2 className="text-3xl md:text-4xl font-bold mb-3">Selamat Datang, {currentUserInfo.name}! 👋</h2><p className="text-blue-100 text-sm md:text-base max-w-xl leading-relaxed">Pantau kinerja website, kelola paket perjalanan, dan perbarui informasi jamaah Anda dari satu panel kontrol yang elegan.</p></div></div>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div className="bg-gradient-to-br from-cyan-500 to-blue-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><Tent size={100}/></div><div className="relative z-10"><p className="text-cyan-100 font-semibold text-xs mb-1">Paket Umroh</p><h3 className="text-3xl font-bold mb-3">{stats.umroh}</h3><button onClick={() => setActiveTab("umroh")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button></div></div>
-                <div className="bg-gradient-to-br from-emerald-500 to-green-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><MapPin size={100}/></div><div className="relative z-10"><p className="text-emerald-100 font-semibold text-xs mb-1">Trip Domestik</p><h3 className="text-3xl font-bold mb-3">{stats.domestik}</h3><button onClick={() => setActiveTab("domestik")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button></div></div>
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><Globe size={100}/></div><div className="relative z-10"><p className="text-indigo-100 font-semibold text-xs mb-1">Trip Internasional</p><h3 className="text-3xl font-bold mb-3">{stats.internasional}</h3><button onClick={() => setActiveTab("internasional")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button></div></div>
-                <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><BookOpen size={100}/></div><div className="relative z-10"><p className="text-amber-100 font-semibold text-xs mb-1">Pusat Berita</p><h3 className="text-3xl font-bold mb-3">{stats.berita}</h3><button onClick={() => setActiveTab("berita")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button></div></div>
-                <div className="bg-gradient-to-br from-rose-500 to-pink-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><MessageSquare size={100}/></div><div className="relative z-10"><p className="text-pink-100 font-semibold text-xs mb-1">Testimoni</p><h3 className="text-3xl font-bold mb-3">{stats.testimoni}</h3><button onClick={() => setActiveTab("testimoni")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button></div></div>
+                <div className="bg-gradient-to-br from-cyan-500 to-blue-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><Tent size={100}/></div><div className="relative z-10"><p className="text-cyan-100 font-semibold text-xs mb-1">Paket Umroh</p><h3 className="text-3xl font-bold mb-3">{stats.umroh}</h3>{canAccessPaket && <button onClick={() => setActiveTab("umroh")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
+                <div className="bg-gradient-to-br from-emerald-500 to-green-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><MapPin size={100}/></div><div className="relative z-10"><p className="text-emerald-100 font-semibold text-xs mb-1">Trip Domestik</p><h3 className="text-3xl font-bold mb-3">{stats.domestik}</h3>{canAccessPaket && <button onClick={() => setActiveTab("domestik")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
+                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><Globe size={100}/></div><div className="relative z-10"><p className="text-indigo-100 font-semibold text-xs mb-1">Trip Internasional</p><h3 className="text-3xl font-bold mb-3">{stats.internasional}</h3>{canAccessPaket && <button onClick={() => setActiveTab("internasional")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
+                <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><BookOpen size={100}/></div><div className="relative z-10"><p className="text-amber-100 font-semibold text-xs mb-1">Pusat Berita</p><h3 className="text-3xl font-bold mb-3">{stats.berita}</h3>{canAccessBerita && <button onClick={() => setActiveTab("berita")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
+                <div className="bg-gradient-to-br from-rose-500 to-pink-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><MessageSquare size={100}/></div><div className="relative z-10"><p className="text-pink-100 font-semibold text-xs mb-1">Testimoni</p><h3 className="text-3xl font-bold mb-3">{stats.testimoni}</h3>{canAccessWeb && <button onClick={() => setActiveTab("testimoni")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
               </div>
             </div>
           )}
@@ -453,25 +590,76 @@ function AdminDashboard() {
             </div>
           )}
 
-          {/* ======================= KONTEN PENGATURAN IDENTITAS ======================= */}
+          {/* ======================= KONTEN PENGATURAN IDENTITAS, FAVICON & TOP BAR ======================= */}
           {activeTab === "config_identitas" && (
             <form onSubmit={handleSaveIdentitas} className="max-w-5xl mx-auto space-y-8 pb-10">
               <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b pb-4">1. Identitas & Logo Perusahaan (Berlaku untuk Navbar & Footer)</h3>
+                <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b pb-4">1. Identitas & Logo Perusahaan (Navbar, Footer & Favicon)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div><label className={labelClass}>Nama Perusahaan / Merek</label><input type="text" name="namaBesar" value={formIdentitas.namaBesar} onChange={handleIdentitasChange} className={inputClass} placeholder="Contoh: ENKA IMRON MANDIRI" required/></div>
                   <div><label className={labelClass}>Tagline / Keterangan Bawah</label><input type="text" name="tagline" value={formIdentitas.tagline} onChange={handleIdentitasChange} className={inputClass} placeholder="Travel Domestik • Internasional • Umroh"/></div>
                   <div><label className={labelClass}>Ukuran Font Tagline (Khusus Navbar)</label><select name="taglineSize" value={formIdentitas.taglineSize} onChange={handleIdentitasChange} className={inputClass}><option value="text-[8px] md:text-[9px]">Sangat Kecil (Standar)</option><option value="text-[10px] md:text-xs">Kecil</option><option value="text-xs md:text-sm">Sedang</option></select></div>
-                  <div className="hidden md:block"></div> {/* Spacing */}
-                  <div><label className={labelClass}>Upload Logo Navbar (Dasar Terang)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoNavbar', 'identitas')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50 outline-none"/></div>
-                  <div><label className={labelClass}>Upload Logo Footer (Dasar Gelap)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoFooter', 'identitas')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50 outline-none"/></div>
+                  <div className="hidden md:block"></div>
+                  
+                  <div>
+                    <label className={labelClass}>Upload Logo Navbar (Dasar Terang)</label>
+                    <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoNavbar', 'identitas')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50 outline-none"/>
+                    {formIdentitas.logoNavbar && <img src={formIdentitas.logoNavbar} alt="Preview Navbar" className="h-10 mt-2 object-contain border p-1 rounded bg-white" />}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Upload Logo Footer (Dasar Gelap)</label>
+                    <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoFooter', 'identitas')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50 outline-none"/>
+                    {formIdentitas.logoFooter && <img src={formIdentitas.logoFooter} alt="Preview Footer" className="h-10 mt-2 object-contain border p-1 rounded bg-[#1e3a8a]" />}
+                  </div>
+                </div>
+
+                {/* PENGATURAN FAVICON */}
+                <div className="border-t border-gray-100 pt-6 mt-4 bg-slate-50 p-5 rounded-2xl">
+                  <label className="text-sm font-bold text-[#1e3a8a] uppercase mb-3 block">Pengaturan Ikon Tab Browser (Favicon)</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div>
+                      <label className={labelClass}>Sumber Gambar Favicon</label>
+                      <select name="faviconMode" value={formIdentitas.faviconMode || "logoNavbar"} onChange={handleIdentitasChange} className={inputClass}>
+                        <option value="logoNavbar">Gunakan Logo Navbar yang Sudah Diupload</option>
+                        <option value="logoFooter">Gunakan Logo Footer yang Sudah Diupload</option>
+                        <option value="custom">Upload Gambar Khusus Favicon</option>
+                      </select>
+                    </div>
+                    {formIdentitas.faviconMode === "custom" && (
+                      <div>
+                        <label className={labelClass}>Upload File Favicon Baru (PNG/ICO)</label>
+                        <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'customFavicon', 'identitas')} className="w-full text-sm border border-gray-200 p-2 rounded-xl bg-white outline-none"/>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* PENGATURAN TOP BAR DENGAN PEMILIH IKON */}
               <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b pb-4">2. Pita Top Bar (Area Biru Paling Atas Navbar)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div><label className={labelClass}>Teks Sebelah Kiri (Izin / Kemenag)</label><input type="text" name="lisensi" value={formIdentitas.lisensi} onChange={handleIdentitasChange} className={inputClass} placeholder="Berizin Resmi Kemenag..."/></div>
-                  <div><label className={labelClass}>Teks Sebelah Kanan (Info Operasional)</label><input type="text" name="topBarKanan" value={formIdentitas.topBarKanan} onChange={handleIdentitasChange} className={inputClass} placeholder="Layanan Pelanggan: 08.00 - 17.00 WIB"/></div>
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-gray-100 space-y-4">
+                    <div>
+                      <label className={labelClass}>Informasi Sebelah Kiri (Misal: Izin / Pengumuman)</label>
+                      <input type="text" name="lisensi" value={formIdentitas.lisensi} onChange={handleIdentitasChange} className={inputClass} placeholder="Berizin Resmi Kemenag..."/>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Ikon Sebelah Kiri</label>
+                      {renderIconSelectorBtn(formIdentitas.lisensiIcon || "ShieldCheck", (val) => setFormIdentitas({...formIdentitas, lisensiIcon: val}))}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-gray-100 space-y-4">
+                    <div>
+                      <label className={labelClass}>Informasi Sebelah Kanan (Misal: Jam / Kontak)</label>
+                      <input type="text" name="topBarKanan" value={formIdentitas.topBarKanan} onChange={handleIdentitasChange} className={inputClass} placeholder="Layanan Pelanggan: 08.00 - 17.00 WIB"/>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Ikon Sebelah Kanan</label>
+                      {renderIconSelectorBtn(formIdentitas.topBarKananIcon || "Clock", (val) => setFormIdentitas({...formIdentitas, topBarKananIcon: val}))}
+                    </div>
+                  </div>
                 </div>
               </div>
               <button type="submit" disabled={isSubmitting || isUploading} className="w-full py-4 bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold rounded-xl shadow-xl transition-colors text-lg">Simpan Identitas Website</button>
@@ -524,8 +712,6 @@ function AdminDashboard() {
             </form>
           )}
 
-          {/* ======================= KONTEN FORM LAINNYA ======================= */}
-          
           {/* CONFIG: TENTANG KAMI */}
           {activeTab === "tentang" && (
             <form onSubmit={handleSaveTentang} className="max-w-5xl mx-auto space-y-8 pb-10">
@@ -567,7 +753,7 @@ function AdminDashboard() {
             </form>
           )}
 
-          {/* CONFIG: BERANDA */}
+          {/* CONFIG: BERANDA (TERMASUK LINK BANNER PROMO SEMUA DIVISI) */}
           {activeTab === "config" && (
              <form onSubmit={handleSaveConfig} className="max-w-5xl mx-auto space-y-8 pb-10">
               <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
@@ -597,7 +783,31 @@ function AdminDashboard() {
                   <div><label className={labelClass}>Teks Label Kecil</label><input type="text" name="promoSmall" value={formConfig.promoSmall} onChange={handleConfigChange} className={inputClass}/></div>
                   <div><label className={labelClass}>Judul Promo</label><textarea name="promoTitle" value={formConfig.promoTitle} onChange={handleConfigChange} rows="2" className={inputClass}></textarea></div>
                   <div><label className={labelClass}>Teks Tombol Promo</label><input type="text" name="promoBtn" value={formConfig.promoBtn} onChange={handleConfigChange} className={inputClass}/></div>
-                  <div><label className={`${labelClass} text-blue-600`}>Tombol Diarahkan Ke Paket:</label><select name="promoLink" value={formConfig.promoLink} onChange={handleConfigChange} className={inputClass}><option value="/umroh">-- Halaman Utama Umroh --</option>{umrohPromoOptions.map(u => (<option key={u.id} value={`/paket/umroh/${u.id}`}>Paket: {u.title}</option>))}</select></div>
+                  <div>
+                    <label className={`${labelClass} text-blue-600`}>Tombol Diarahkan Ke Halaman / Paket:</label>
+                    <select name="promoLink" value={formConfig.promoLink} onChange={handleConfigChange} className={inputClass}>
+                      <optgroup label="Halaman Utama Divisi">
+                        <option value="/umroh">-- Halaman Utama Umroh --</option>
+                        <option value="/domestik">-- Halaman Utama Domestik --</option>
+                        <option value="/internasional">-- Halaman Utama Internasional --</option>
+                      </optgroup>
+                      {allPromoOptions.umroh.length > 0 && (
+                        <optgroup label="Paket Umroh">
+                          {allPromoOptions.umroh.map(u => (<option key={`u-${u.id}`} value={`/paket/umroh/${u.id}`}>Umroh: {u.title}</option>))}
+                        </optgroup>
+                      )}
+                      {allPromoOptions.domestik.length > 0 && (
+                        <optgroup label="Paket Domestik">
+                          {allPromoOptions.domestik.map(d => (<option key={`d-${d.id}`} value={`/paket/domestik/${d.id}`}>Domestik: {d.title}</option>))}
+                        </optgroup>
+                      )}
+                      {allPromoOptions.internasional.length > 0 && (
+                        <optgroup label="Paket Internasional">
+                          {allPromoOptions.internasional.map(i => (<option key={`i-${i.id}`} value={`/paket/internasional/${i.id}`}>Internasional: {i.title}</option>))}
+                        </optgroup>
+                      )}
+                    </select>
+                  </div>
                   <div><label className={labelClass}>Harga Mulai (Angka Besar)</label><input type="text" name="promoPrice" value={formConfig.promoPrice} onChange={handleConfigChange} className={inputClass}/></div>
                   <div><label className={labelClass}>Warna Latar Promo</label><select name="promoBgColor" value={formConfig.promoBgColor} onChange={handleConfigChange} className={inputClass}>{bgColorOptions}</select></div>
                   <div className="md:col-span-2"><label className={labelClass}>Background Gambar Promo</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'promoBg', 'home')} className="w-full text-sm border p-2.5 rounded-xl bg-slate-50"/></div>
@@ -730,7 +940,7 @@ function AdminDashboard() {
              </form>
           )}
 
-          {/* TABEL DATA UMUM (TERMASUK FAQ) DENGAN FITUR PENCARIAN */}
+          {/* TABEL DATA UMUM (TERMASUK FAQ DAN MANAJEMEN USER) */}
           {!noTablePages.includes(activeTab) && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               
@@ -745,9 +955,10 @@ function AdminDashboard() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Kategori" : "Visual"}</th>
-                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Pertanyaan" : "Informasi Utama"}</th>
+                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Kategori" : activeTab === "users" ? "Role Akses" : "Visual"}</th>
+                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Pertanyaan" : activeTab === "users" ? "Nama & Email Pengelola" : "Informasi Utama"}</th>
                     {activeTab === "berita" && <th className="px-6 py-4 font-semibold">Tanggal Terbit</th>}
+                    {activeTab === "users" && <th className="px-6 py-4 font-semibold">Status</th>}
                     <th className="px-6 py-4 font-semibold text-right">Aksi</th>
                   </tr>
                 </thead>
@@ -756,13 +967,17 @@ function AdminDashboard() {
                     const DynamicIcon = IconMap[item.icon] || Star;
                     return (
                       <tr key={item.id} className="hover:bg-blue-50/30 transition group">
-                        <td className="px-6 py-4 w-24">
+                        <td className="px-6 py-4 w-32">
                           {(activeTab === "mengapa" || activeTab === "layanan" || activeTab === "keunggulan_umroh" || activeTab === "keunggulan_domestik" || activeTab === "keunggulan_internasional") ? (
                             <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-md ${item.color || 'bg-[#1e3a8a]'}`}><DynamicIcon size={26} /></div>
                           ) : activeTab === "testimoni" ? (
                             <img src={item.img} alt={item.name} className="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200" />
                           ) : activeTab === "faq" ? (
                             <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">{item.kategori}</span>
+                          ) : activeTab === "users" ? (
+                            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap inline-block ${item.role === 'Super Admin' ? 'bg-purple-100 text-purple-700' : item.role === 'Admin Paket' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {item.role}
+                            </span>
                           ) : (<img src={item.image} alt={item.title} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />)}
                         </td>
                         <td className="px-6 py-4">
@@ -771,15 +986,22 @@ function AdminDashboard() {
                             {(activeTab === 'daerah' || activeTab === 'daerah_internasional') && (<span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{item.status || 'Aktif'}</span>)}
                             {activeTab === 'berita' && (<span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider bg-blue-100 text-blue-600">{item.tipe || 'Umroh'}</span>)}
                           </div>
-                          <div className="text-xs text-gray-500 line-clamp-1">{item.deskripsi || item.text || item.daerah || item.negara || item.service || item.jawaban || (item.text && item.text.replace(/<[^>]*>?/gm, ''))}</div>
+                          <div className="text-xs text-gray-500 line-clamp-1">{item.email || item.deskripsi || item.text || item.daerah || item.negara || item.service || item.jawaban || (item.text && item.text.replace(/<[^>]*>?/gm, ''))}</div>
                         </td>
                         
-                        {/* KOLOM TANGGAL (KHUSUS BERITA) */}
                         {activeTab === "berita" && (
                           <td className="px-6 py-4">
                             <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-slate-100 px-3 py-1.5 rounded-lg w-max">
                               <Calendar size={14} className="text-gray-400" />
                               {item.date}
+                            </span>
+                          </td>
+                        )}
+
+                        {activeTab === "users" && (
+                          <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                              {item.status || 'Aktif'}
                             </span>
                           </td>
                         )}
@@ -813,6 +1035,49 @@ function AdminDashboard() {
             <div className="p-8 overflow-y-auto bg-slate-50 custom-scrollbar">
               <form id="dataForm" onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
                 
+                {/* FORM MANAJEMEN USER & ROLE */}
+                {activeTab === "users" && (
+                  <div className="col-span-2 flex flex-col gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className={labelClass}>Nama Lengkap Staf / Pengelola</label>
+                        <input type="text" name="name" value={formUser.name} onChange={(e) => handleChange(e, setFormUser, formUser)} placeholder="Contoh: Ahmad Fauzi" className={inputClass} required />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Email Login</label>
+                        <input type="email" name="email" value={formUser.email} onChange={(e) => handleChange(e, setFormUser, formUser)} disabled={!!editId} placeholder="staf@enkaimron.com" className={`${inputClass} ${editId ? 'bg-gray-100 cursor-not-allowed' : ''}`} required />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {!editId && (
+                        <div>
+                          <label className={labelClass}>Password Login Awal (Min. 6 Karakter)</label>
+                          <div className="relative">
+                            <Key size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+                            <input type="password" name="password" value={formUser.password} onChange={(e) => handleChange(e, setFormUser, formUser)} placeholder="Minimal 6 karakter..." className={`${inputClass} pl-10`} minLength={6} required />
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <label className={labelClass}>Pilih Role (Hak Akses Menu)</label>
+                        <select name="role" value={formUser.role} onChange={(e) => handleChange(e, setFormUser, formUser)} className={inputClass}>
+                          <option value="Super Admin">Super Admin (Akses Penuh Semua Menu)</option>
+                          <option value="Admin Paket">Admin Paket (Hanya Kelola Paket & Destinasi)</option>
+                          <option value="Editor Berita">Editor Berita (Hanya Kelola Berita & Artikel)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelClass}>Status Akun</label>
+                        <select name="status" value={formUser.status} onChange={(e) => handleChange(e, setFormUser, formUser)} className={inputClass}>
+                          <option value="Aktif">Aktif</option>
+                          <option value="Nonaktif">Nonaktif</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* FORM UMROH */}
                 {activeTab === "umroh" && (
                   <div className="col-span-2 flex flex-col gap-6">

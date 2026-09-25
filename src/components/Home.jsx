@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, getDoc, query } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   MapPin, Clock, Users, Calendar, ChevronRight, ChevronLeft,
   Plane, Bus, TrainFront, Ship, Car, Box, Star, Tent,
   ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, 
-  CheckCircle, Compass, Globe, Search, MessageSquare, MessageCircle
+  CheckCircle, Compass, Globe, Search, MessageSquare, MessageCircle,
+  BookOpen, FileText, Building, Banknote, Coins, Wallet, CircleDollarSign, 
+  Map, Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, 
+  ShoppingBag, Utensils, Wifi, Landmark, Ticket
 } from "lucide-react";
 
-const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Tent, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass };
+const IconMap = { 
+  ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, 
+  Tent, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass, BookOpen, Ship, 
+  TrainFront, FileText, Building, Banknote, Coins, Wallet, CircleDollarSign, 
+  Map, Calendar, Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, 
+  ShoppingBag, Utensils, Wifi, Landmark, Ticket 
+};
 
 const defaultTestimoni = [
   { id: 1, name: "Ahmad Fauzi", service: "Paket Umroh", text: "Pelayanan sangat memuaskan, mulai dari keberangkatan sampai kembali ke tanah air. Terima kasih Enka Imron Mandiri.", img: "https://randomuser.me/api/portraits/men/32.jpg", stars: 5 },
@@ -19,7 +28,7 @@ const defaultTestimoni = [
 
 const defaultLayanan = [
   { id: '1', title: 'Domestik', deskripsi: 'Jelajahi keindahan Indonesia dengan berbagai pilihan destinasi terbaik.', icon: 'Plane', color: 'bg-[#1e3a8a]', link: '/domestik', image: 'https://images.unsplash.com/photo-1555400038-63f5ba517a47?q=80&w=800' },
-  { id: '2', title: 'Internasional', deskripsi: 'Nikmati pengalaman berharga ke berbagai negara dengan pelayanan berkelas.', icon: 'Globe', color: 'bg-[#1e3a8a]', link: '#', image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=800' },
+  { id: '2', title: 'Internasional', deskripsi: 'Nikmati pengalaman berharga ke berbagai negara dengan pelayanan berkelas.', icon: 'Globe', color: 'bg-[#1e3a8a]', link: '/internasional', image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=800' },
   { id: '3', title: 'Umroh', deskripsi: 'Perjalanan ibadah yang nyaman dan aman bersama pembimbing berpengalaman.', icon: 'Box', color: 'bg-[#f59e0b]', link: '/umroh', image: 'https://images.unsplash.com/photo-1565552643952-2508825c868c?q=80&w=800' }
 ];
 
@@ -89,19 +98,6 @@ function Home() {
     }
   };
 
-  const renderStars = (count) => {
-    return Array.from({ length: parseInt(count) || 5 }).map((_, i) => (
-      <Star key={i} size={16} className="text-[#f59e0b] fill-current" />
-    ));
-  };
-
-  // FUNGSI PENCARIAN BERANDA (MENGARAHKAN KE HALAMAN DIVISI YANG SESUAI)
-  const handleSearchSubmit = () => {
-    if (activeTab === "Domestik") navigate("/domestik");
-    else if (activeTab === "Internasional") navigate("/internasional");
-    else if (activeTab === "Umroh") navigate("/umroh");
-  };
-
   return (
     <div className="font-sans bg-white pt-20 overflow-x-hidden">
       
@@ -121,7 +117,6 @@ function Home() {
             {config.heroDesc}
           </p>
           
-          {/* PERBAIKAN: Gaya 3 Ikon Disamakan dengan Halaman Lain (Glassmorphism) */}
           {config.showBadges === "ya" && (
             <div className="hidden md:flex flex-wrap items-center gap-6 mt-6 mb-2">
               {[{ text: config.b1Text, iconStr: config.b1Icon }, { text: config.b2Text, iconStr: config.b2Icon }, { text: config.b3Text, iconStr: config.b3Icon }].map((item, index) => {
@@ -139,7 +134,7 @@ function Home() {
         </div>
       </div>
 
-     {/* 2. KOTAK KONSULTASI & PERENCANAAN PERJALANAN (PENGGANTI PENCARIAN) */}
+      {/* 2. KOTAK KONSULTASI & PERENCANAAN PERJALANAN */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-24 md:-mt-20 mb-16 md:mb-20">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="flex bg-[#1e3a8a]">
@@ -230,21 +225,55 @@ function Home() {
         </div>
       </div>
 
-      {/* 3. LAYANAN KAMI */}
+      {/* 3. LAYANAN KAMI (PERBAIKAN: Seluruh Kartu Sekarang Bisa Diklik) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 md:mb-24">
-        <div className="text-center mb-8 md:mb-12"><p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Layanan Kami</p><h2 className="text-2xl md:text-4xl font-extrabold text-[#1e3a8a]">Tiga Layanan Utama</h2></div>
+        <div className="text-center mb-8 md:mb-12">
+          <p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Layanan Kami</p>
+          <h2 className="text-2xl md:text-4xl font-extrabold text-[#1e3a8a]">Tiga Layanan Utama</h2>
+        </div>
+        
         <div className="hidden md:grid md:grid-cols-3 gap-6">
           {layananList.slice(0, 3).map(layanan => {
             const IconRender = IconMap[layanan.icon] || Globe;
             return (
-              <div key={layanan.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-shadow group relative flex flex-col"><div className="h-48 overflow-hidden"><img src={layanan.image || defaultConfig.promoBg} alt={layanan.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /></div><div className={`absolute top-40 left-6 text-white p-3 rounded-xl shadow-lg border-4 border-white ${layanan.color || 'bg-[#1e3a8a]'}`}><IconRender size={24}/></div><div className="pt-12 pb-6 px-6 flex-1 flex flex-col"><h3 className="text-xl font-bold text-gray-800 mb-2 uppercase tracking-wide">{layanan.title}</h3><p className="text-gray-500 text-sm leading-relaxed mb-6 flex-1">{layanan.deskripsi}</p><Link to={layanan.link || "#"} className="text-[#1e3a8a] font-bold text-sm flex items-center gap-2 hover:text-[#f59e0b] transition-colors">Lihat Destinasi <span className="text-lg">→</span></Link></div></div>
+              <Link 
+                key={layanan.id} 
+                to={layanan.link || "#"} 
+                className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative flex flex-col cursor-pointer"
+              >
+                <div className="h-48 overflow-hidden">
+                  <img src={layanan.image || defaultConfig.promoBg} alt={layanan.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                </div>
+                <div className={`absolute top-40 left-6 text-white p-3 rounded-xl shadow-lg border-4 border-white ${layanan.color || 'bg-[#1e3a8a]'}`}>
+                  <IconRender size={24}/>
+                </div>
+                <div className="pt-12 pb-6 px-6 flex-1 flex flex-col">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2 uppercase tracking-wide group-hover:text-[#1e3a8a] transition-colors">
+                    {layanan.title}
+                  </h3>
+                  <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-1">
+                    {layanan.deskripsi}
+                  </p>
+                  <div className="text-[#1e3a8a] font-bold text-sm flex items-center gap-2 group-hover:text-[#f59e0b] transition-colors">
+                    Lihat Destinasi <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
+                </div>
+              </Link>
             );
           })}
         </div>
+
         <div className="grid grid-cols-3 gap-2 md:hidden max-w-sm mx-auto">
           {layananList.slice(0, 3).map(layanan => {
             const IconRender = IconMap[layanan.icon] || Globe;
-            return (<Link key={layanan.id} to={layanan.link || "#"} className="flex flex-col items-center group"><div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md mb-2 ${layanan.color || 'bg-[#1e3a8a]'}`}><IconRender size={30} strokeWidth={1.5}/></div><span className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">{layanan.title}</span></Link>);
+            return (
+              <Link key={layanan.id} to={layanan.link || "#"} className="flex flex-col items-center group">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md mb-2 group-active:scale-95 transition-transform ${layanan.color || 'bg-[#1e3a8a]'}`}>
+                  <IconRender size={30} strokeWidth={1.5}/>
+                </div>
+                <span className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">{layanan.title}</span>
+              </Link>
+            );
           })}
         </div>
       </div>
