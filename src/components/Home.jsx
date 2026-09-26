@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { 
   MapPin, Clock, Users, Calendar, ChevronRight, ChevronLeft,
   Plane, Bus, TrainFront, Ship, Car, Box, Star, Tent,
@@ -18,6 +18,13 @@ const IconMap = {
   TrainFront, FileText, Building, Banknote, Coins, Wallet, CircleDollarSign, 
   Map, Calendar, Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, 
   ShoppingBag, Utensils, Wifi, Landmark, Ticket 
+};
+
+const formatWaNumber = (num) => {
+  if (!num) return "";
+  let clean = num.toString().replace(/\D/g, "");
+  if (clean.startsWith("0")) clean = "62" + clean.slice(1);
+  return clean;
 };
 
 const defaultTestimoni = [
@@ -41,20 +48,38 @@ const defaultConfig = {
 
 function Home() {
   const [activeTab, setActiveTab] = useState("Tanya Paket");
+  const [selectedDivisi, setSelectedDivisi] = useState("Umroh");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const [config, setConfig] = useState(defaultConfig);
+  const [waContacts, setWaContacts] = useState({
+    utama: "6281234567890",
+    umroh: "6281234567890",
+    domestik: "6281234567890",
+    internasional: "6281234567890"
+  });
   const [layananList, setLayananList] = useState(defaultLayanan);
   const [mengapaList, setMengapaList] = useState([]);
   const [testimoniList, setTestimoniList] = useState(defaultTestimoni);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
         const configSnap = await getDoc(doc(db, "settings", "home"));
         if (configSnap.exists()) setConfig({ ...defaultConfig, ...configSnap.data() });
+
+        const idSnap = await getDoc(doc(db, "settings", "identitas"));
+        if (idSnap.exists()) {
+          const d = idSnap.data();
+          const main = formatWaNumber(d.noWa) || "6281234567890";
+          setWaContacts({
+            utama: main,
+            umroh: formatWaNumber(d.noWaUmroh) || main,
+            domestik: formatWaNumber(d.noWaDomestik) || main,
+            internasional: formatWaNumber(d.noWaInternasional) || main
+          });
+        }
 
         const laySnap = await getDocs(collection(db, "layanan_utama"));
         if (!laySnap.empty) setLayananList(laySnap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -72,6 +97,13 @@ function Home() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const getTargetWa = (divisi) => {
+    if (divisi === "Umroh") return waContacts.umroh;
+    if (divisi === "Domestik") return waContacts.domestik;
+    if (divisi === "Internasional") return waContacts.internasional;
+    return waContacts.utama;
+  };
 
   const itemsPerSlide = isMobile ? 1 : 3;
   const totalSlides = Math.ceil(testimoniList.length / itemsPerSlide);
@@ -134,7 +166,7 @@ function Home() {
         </div>
       </div>
 
-      {/* 2. KOTAK KONSULTASI & PERENCANAAN PERJALANAN */}
+      {/* 2. KOTAK KONSULTASI & PERENCANAAN PERJALANAN (MENDUKUNG 3 DIVISI WA) */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-24 md:-mt-20 mb-16 md:mb-20">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="flex bg-[#1e3a8a]">
@@ -150,7 +182,7 @@ function Home() {
           
           <div className="p-5 md:p-8">
             {activeTab === "Tanya Paket" && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="flex flex-col relative">
                   <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Nama Anda</label>
                   <div className="relative">
@@ -158,18 +190,27 @@ function Home() {
                     <input id="waNama" type="text" placeholder="Contoh: Budi" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
                   </div>
                 </div>
-                <div className="flex flex-col relative md:col-span-2">
-                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Destinasi yang Dicari</label>
+                <div className="flex flex-col relative">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Pilih Divisi</label>
+                  <select value={selectedDivisi} onChange={(e) => setSelectedDivisi(e.target.value)} className="w-full border border-gray-200 rounded-xl py-2.5 px-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold bg-white cursor-pointer">
+                    <option value="Umroh">Divisi Umroh</option>
+                    <option value="Domestik">Trip Domestik</option>
+                    <option value="Internasional">Trip Internasional</option>
+                  </select>
+                </div>
+                <div className="flex flex-col relative">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Destinasi / Paket</label>
                   <div className="relative">
                     <MapPin size={16} className="absolute left-3 top-3.5 text-gray-400" />
-                    <input id="waTujuan" type="text" placeholder="Contoh: Paket Umroh Agustus / Trip Bali" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
+                    <input id="waTujuan" type="text" placeholder="Misal: Umroh Syawal / Bali" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
                   </div>
                 </div>
                 <button onClick={() => {
-                  const nama = document.getElementById('waNama').value || 'Calon Jamaah';
-                  const tujuan = document.getElementById('waTujuan').value || 'paket wisata Anda';
-                  const pesan = `Halo tim Enka Imron Mandiri, perkenalkan saya *${nama}*. Saya sedang mencari informasi dan rekomendasi terkait *${tujuan}*. Bisa tolong dibantu?`;
-                  window.open(`https://wa.me/6281234567890?text=${encodeURIComponent(pesan)}`, '_blank');
+                  const nama = document.getElementById('waNama').value || 'Calon Pelanggan';
+                  const tujuan = document.getElementById('waTujuan').value || `paket ${selectedDivisi}`;
+                  const targetPhone = getTargetWa(selectedDivisi);
+                  const pesan = `Halo Admin *Divisi ${selectedDivisi}* Enka Imron Mandiri, perkenalkan saya *${nama}*. Saya sedang mencari informasi dan rekomendasi terkait *${tujuan}*. Bisa tolong dibantu?`;
+                  window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(pesan)}`, '_blank');
                 }} className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-yellow-500/30 flex justify-center items-center gap-2">
                   <Smile size={18}/> Tanya Sekarang
                 </button>
@@ -177,12 +218,20 @@ function Home() {
             )}
 
             {activeTab === "Custom Trip" && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-end">
-                <div className="flex flex-col relative md:col-span-2">
-                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Rencana Tujuan Rombongan</label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="flex flex-col relative">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Divisi Perjalanan</label>
+                  <select value={selectedDivisi} onChange={(e) => setSelectedDivisi(e.target.value)} className="w-full border border-gray-200 rounded-xl py-2.5 px-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold bg-white cursor-pointer">
+                    <option value="Domestik">Trip Domestik</option>
+                    <option value="Internasional">Trip Internasional</option>
+                    <option value="Umroh">Umroh Private / Keluarga</option>
+                  </select>
+                </div>
+                <div className="flex flex-col relative">
+                  <label className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Rencana Tujuan</label>
                   <div className="relative">
                     <Globe size={16} className="absolute left-3 top-3.5 text-gray-400" />
-                    <input id="customTujuan" type="text" placeholder="Contoh: Tour Jawa Bali / Eropa Barat" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
+                    <input id="customTujuan" type="text" placeholder="Contoh: Jawa-Bali / Turki" className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 focus:outline-none focus:border-[#1e3a8a] text-xs md:text-sm font-semibold"/>
                   </div>
                 </div>
                 <div className="flex flex-col relative">
@@ -195,8 +244,9 @@ function Home() {
                 <button onClick={() => {
                   const tujuan = document.getElementById('customTujuan').value || 'destinasi pilihan saya';
                   const peserta = document.getElementById('customPeserta').value || 'beberapa';
-                  const pesan = `Halo, saya ingin berkonsultasi untuk membuat *Custom Trip / Private Tour* ke *${tujuan}* untuk rombongan sebanyak *${peserta} orang*. Bagaimana prosedurnya?`;
-                  window.open(`https://wa.me/6281234567890?text=${encodeURIComponent(pesan)}`, '_blank');
+                  const targetPhone = getTargetWa(selectedDivisi);
+                  const pesan = `Halo Admin *Divisi ${selectedDivisi}* Enka Imron Mandiri, saya ingin berkonsultasi untuk membuat *Custom Trip / Private Tour* ke *${tujuan}* untuk rombongan sebanyak *${peserta} orang*. Bagaimana prosedurnya?`;
+                  window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(pesan)}`, '_blank');
                 }} className="w-full bg-[#1e3a8a] hover:bg-blue-800 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base shadow-lg shadow-blue-900/30 flex justify-center items-center gap-2">
                   <Compass size={18}/> Buat Rute Kustom
                 </button>
@@ -204,28 +254,34 @@ function Home() {
             )}
 
             {activeTab === "Bantuan CS" && (
-              <div className="flex flex-col md:flex-row items-center justify-between bg-blue-50 p-4 md:p-6 rounded-xl border border-blue-100">
-                <div className="flex items-center gap-4 mb-4 md:mb-0">
-                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shrink-0 shadow-md">
-                    <MessageCircle size={24} />
+              <div className="bg-blue-50 p-4 md:p-6 rounded-xl border border-blue-100">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shrink-0 shadow-md">
+                    <MessageCircle size={20} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#1e3a8a] text-sm md:text-base">Butuh Bantuan Langsung?</h4>
-                    <p className="text-xs md:text-sm text-gray-600">Tim Customer Service kami siap membantu merencanakan perjalanan Anda atau menjawab pertanyaan seputar fasilitas dan dokumen.</p>
+                    <h4 className="font-bold text-[#1e3a8a] text-sm md:text-base">Pilih Admin Divisi yang Ingin Dihubungi:</h4>
+                    <p className="text-xs text-gray-600">Klik salah satu tombol di bawah agar langsung terhubung dengan spesialis divisi kami.</p>
                   </div>
                 </div>
-                <button onClick={() => {
-                  window.open(`https://wa.me/6281234567890?text=${encodeURIComponent("Halo Admin Enka Imron Mandiri, saya butuh bantuan informasi terkait layanan travel Anda.")}`, '_blank');
-                }} className="w-full md:w-auto bg-[#25D366] hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl transition text-sm shadow-lg shadow-green-500/30 flex justify-center items-center gap-2 shrink-0 whitespace-nowrap">
-                  <MessageCircle size={18}/> Chat Admin (Online)
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button onClick={() => window.open(`https://wa.me/${waContacts.umroh}?text=${encodeURIComponent("Halo Admin Divisi Umroh Enka Imron Mandiri, saya ingin bertanya seputar keberangkatan Umroh.")}`, '_blank')} className="bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-xl transition text-xs md:text-sm shadow-sm flex justify-center items-center gap-2">
+                    <Tent size={16}/> CS Divisi Umroh
+                  </button>
+                  <button onClick={() => window.open(`https://wa.me/${waContacts.domestik}?text=${encodeURIComponent("Halo Admin Divisi Domestik Enka Imron Mandiri, saya ingin bertanya seputar paket wisata Nusantara.")}`, '_blank')} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition text-xs md:text-sm shadow-sm flex justify-center items-center gap-2">
+                    <MapPin size={16}/> CS Divisi Domestik
+                  </button>
+                  <button onClick={() => window.open(`https://wa.me/${waContacts.internasional}?text=${encodeURIComponent("Halo Admin Divisi Internasional Enka Imron Mandiri, saya ingin bertanya seputar tour luar negeri.")}`, '_blank')} className="bg-[#1e3a8a] hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-xl transition text-xs md:text-sm shadow-sm flex justify-center items-center gap-2">
+                    <Globe size={16}/> CS Divisi Internasional
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* 3. LAYANAN KAMI (PERBAIKAN: Seluruh Kartu Sekarang Bisa Diklik) */}
+      {/* 3. LAYANAN KAMI */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 md:mb-24">
         <div className="text-center mb-8 md:mb-12">
           <p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Layanan Kami</p>

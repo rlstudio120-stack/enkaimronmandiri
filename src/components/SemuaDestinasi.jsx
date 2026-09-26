@@ -74,7 +74,7 @@ function SemuaDestinasi() {
         </div>
       </div>
 
-      {/* 3. GRID DESTINASI */}
+      {/* 3. GRID DESTINASI (Disamakan dengan Kartu Daerah di Domestik.jsx) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {!loading && daerahList.length > 0 && (
           <div className="mb-6 text-gray-500 text-sm font-medium text-center md:text-left">
@@ -99,20 +99,22 @@ function SemuaDestinasi() {
             <p className="text-gray-500">Tidak ada destinasi yang cocok dengan kata kunci "{searchQuery}".</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {filteredDaerah.map((daerah) => (
-              <Link to={`/domestik/daerah/${daerah.title}`} key={daerah.id} className="relative h-48 md:h-64 rounded-3xl overflow-hidden group cursor-pointer shadow-sm hover:shadow-2xl transition-all border border-white">
-                <img src={daerah.image || "https://images.unsplash.com/photo-1555400038-63f5ba517a47?q=80&w=800"} alt={daerah.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                
-                <div className="absolute bottom-5 left-5 right-5">
-                  <div className="flex items-center gap-1.5 text-[#f59e0b] mb-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0 duration-300">
-                    <MapPin size={14} /> <span className="text-[10px] font-bold uppercase tracking-widest">Eksplorasi</span>
-                  </div>
-                  <h3 className="text-white font-extrabold text-xl md:text-2xl tracking-wide drop-shadow-md">
-                    {daerah.title}
-                  </h3>
-                </div>
+              <Link 
+                to={`/domestik/daerah/${daerah.title}`} 
+                key={daerah.id} 
+                className="relative h-40 md:h-56 rounded-2xl overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all"
+              >
+                <img 
+                  src={daerah.image || "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=800"} 
+                  alt={daerah.title} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <h3 className="absolute bottom-4 left-4 text-white font-bold text-lg md:text-xl tracking-wide">
+                  {daerah.title}
+                </h3>
               </Link>
             ))}
           </div>

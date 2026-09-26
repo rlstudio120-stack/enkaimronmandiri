@@ -1,19 +1,30 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import SharePackage from "./SharePackage";
 import { 
-  MapPin, Clock, Calendar, ArrowLeft, ChevronRight, 
-  Plane, Building, TrainFront, ChevronDown, ChevronUp, Star
+  Clock, Calendar, ArrowLeft, ChevronRight, 
+  Plane, Building, TrainFront, ChevronDown, ChevronUp, Star,
+  FileImage, ZoomIn, Download, X
 } from "lucide-react";
+
+const formatWaNumber = (num) => {
+  if (!num) return "";
+  let clean = num.toString().replace(/\D/g, "");
+  if (clean.startsWith("0")) clean = "62" + clean.slice(1);
+  return clean;
+};
 
 function DetailUmroh() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [paket, setPaket] = useState(null);
   const [config, setConfig] = useState(null); 
+  const [waNumber, setWaNumber] = useState("6281234567890");
   const [loading, setLoading] = useState(true);
   const [openAccordion, setOpenAccordion] = useState(null);
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,11 +33,19 @@ function DetailUmroh() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setPaket({ id: docSnap.id, ...docSnap.data() });
+          document.title = `${docSnap.data().title} | Enka Imron Mandiri`;
         }
         
         const configSnap = await getDoc(doc(db, "settings", "umroh"));
         if (configSnap.exists()) {
           setConfig(configSnap.data());
+        }
+
+        const idSnap = await getDoc(doc(db, "settings", "identitas"));
+        if (idSnap.exists()) {
+          const d = idSnap.data();
+          const targetWa = formatWaNumber(d.noWaUmroh) || formatWaNumber(d.noWa) || "6281234567890";
+          setWaNumber(targetWa);
         }
       } catch (error) {
         console.error("Gagal mengambil data:", error);
@@ -63,8 +82,33 @@ function DetailUmroh() {
     ));
   };
 
+  // Fungsi Download Gambar Flyer Langsung ke Perangkat
+  const handleDownloadImage = async (imgUrl, title) => {
+    try {
+      const response = await fetch(imgUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Brosur-${(title || "Paket").replace(/\s+/g, "-")}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      window.open(imgUrl, "_blank");
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex justify-center items-center pt-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#1e3a8a]"></div></div>;
   if (!paket) return <div className="min-h-screen flex flex-col justify-center items-center pt-20"><h2 className="text-2xl font-bold mb-4">Paket Tidak Ditemukan</h2><button onClick={() => navigate(-1)} className="bg-[#1e3a8a] text-white px-6 py-2 rounded-xl">Kembali</button></div>;
+
+  const infoKeberangkatan = paket.tipeWaktu === "bulan" ? `Bulan ${paket.waktuInfo || "-"}` : (paket.waktuInfo || "-");
+  const pesanPaket = `Assalamu'alaikum Admin Umroh Enka Imron Mandiri, saya tertarik untuk berkonsultasi mengenai paket ibadah umroh:\n\n*Nama Paket:* ${paket.title}\n*Keberangkatan:* ${infoKeberangkatan}\n*Durasi:* ${paket.duration || "9 Hari"}\n*Maskapai:* ${paket.maskapai || "-"}\n\nMohon informasi lebih lanjut mengenai ketersediaan seat dan persyaratannya. Terima kasih.`;
+  const linkWaPaket = `https://wa.me/${waNumber}?text=${encodeURIComponent(pesanPaket)}`;
+
+  const pesanCta = `Assalamu'alaikum Admin Umroh Enka Imron Mandiri, saya sedang melihat paket *${paket.title}* dan ingin berkonsultasi lebih lanjut mengenai pendaftaran ibadah umroh.`;
+  const linkWaCta = `https://wa.me/${waNumber}?text=${encodeURIComponent(pesanCta)}`;
 
   return (
     <div className="pt-28 pb-20 bg-slate-50 min-h-screen font-sans">
@@ -74,10 +118,30 @@ function DetailUmroh() {
           <ArrowLeft size={18} /> Kembali ke Pilihan Paket
         </button>
 
-        <div className="relative w-full h-[350px] md:h-[450px] rounded-3xl overflow-hidden mb-10 shadow-lg bg-[#0f172a]">
+        {/* HERO GAMBAR COVER */}
+        <div className="relative w-full h-[350px] md:h-[450px] rounded-3xl overflow-hidden mb-10 shadow-lg bg-[#0f172a] group">
           <img src={paket.image} alt={paket.title} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/90 via-[#0f172a]/40 to-transparent"></div>
           
+          {/* Tombol Pojok Kanan Atas: Perbesar Cover / Lihat Brosur */}
+          <div className="absolute top-5 right-5 flex gap-2 z-10">
+            {paket.flyer && (
+              <button 
+                onClick={() => setLightboxImg(paket.flyer)} 
+                className="bg-[#f59e0b] hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
+              >
+                <FileImage size={16} /> Lihat Flyer Promosi
+              </button>
+            )}
+            <button 
+              onClick={() => setLightboxImg(paket.image)} 
+              className="bg-black/40 hover:bg-black/70 backdrop-blur-md text-white px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-white/20 transition-all"
+              title="Perbesar Gambar Cover"
+            >
+              <ZoomIn size={16} /> <span className="hidden sm:inline">Perbesar Foto</span>
+            </button>
+          </div>
+
           <div className="absolute bottom-0 left-0 w-full p-6 md:p-10">
             <div className="flex gap-2 mb-4 flex-wrap">
               <span className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
@@ -135,7 +199,7 @@ function DetailUmroh() {
                   <div>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Keberangkatan</p>
                     <p className="text-sm font-semibold text-gray-800 mt-0.5 capitalize">
-                      {paket.tipeWaktu === "bulan" ? `Bulan ${paket.waktuInfo}` : paket.waktuInfo}
+                      {infoKeberangkatan}
                     </p>
                   </div>
                 </div>
@@ -150,7 +214,6 @@ function DetailUmroh() {
                   </div>
                 )}
 
-                {/* PERBAIKAN: Hotel Mekah selalu tampil, jika disembunyikan pakai teks 'Setaraf Bintang' */}
                 {(paket.hotelMekah || paket.bintangMekah) && (
                   <div className="flex items-start gap-4">
                     <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Building size={20}/></div>
@@ -164,7 +227,6 @@ function DetailUmroh() {
                   </div>
                 )}
 
-                {/* PERBAIKAN: Hotel Madinah selalu tampil, jika disembunyikan pakai teks 'Setaraf Bintang' */}
                 {(paket.hotelMadinah || paket.bintangMadinah) && (
                   <div className="flex items-start gap-4">
                     <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Building size={20}/></div>
@@ -197,38 +259,87 @@ function DetailUmroh() {
                 </div>
               </div>
               
-              <Link to="https://wa.me/6281234567890" target="_blank" className="w-full bg-[#0d9118] hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/30 transition-colors text-sm md:text-base flex items-center justify-center gap-2">
-                Konsultasi via WA <ChevronRight size={18}/>
-              </Link>
+              <div className="space-y-3">
+             <a href={linkWaPaket} target="_blank" rel="noopener noreferrer" className="w-full bg-[#0d9118] hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/30 transition-colors text-sm md:text-base flex items-center justify-center gap-2">
+               Konsultasi via WA <ChevronRight size={18}/>
+             </a>
+
+             {paket.flyer && (
+               <button 
+                 onClick={() => setLightboxImg(paket.flyer)} 
+                 className="w-full bg-blue-50 hover:bg-blue-100 text-[#1e3a8a] border border-blue-200 font-bold py-3.5 rounded-xl transition-colors text-xs md:text-sm flex items-center justify-center gap-2"
+               >
+                 <FileImage size={18} className="text-[#f59e0b]" /> Lihat Brosur / Flyer Paket
+               </button>
+             )}
+
+             {/* TOMBOL BAGIKAN PAKET */}
+             <SharePackage 
+               title={paket.title} 
+               price={paket.price} 
+               duration={paket.duration || "9 Hari"} 
+               kategori="Paket Ibadah Umroh" 
+               infoTambahan={`Keberangkatan: ${infoKeberangkatan}`} 
+             />
+           </div>
             </div>
           </div>
         </div>
 
-        {config && (
-          <div className="mt-16 md:mt-24">
-            <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[200px] md:min-h-[250px] flex items-center ${config.ctaBgColor || 'bg-[#1e3a8a]'}`}>
-              <div className="absolute inset-0 w-full h-full">
-                <img src={config.ctaBg || "https://images.unsplash.com/photo-1565552643982-b5e13d9646b9?q=80&w=2000"} className={`w-full h-full object-cover ${config.ctaBgPos || 'object-center'}`} />
-              </div>
-              <div className={`absolute inset-0 bg-gradient-to-r ${getCtaGradient(config.ctaBgColor || 'bg-[#1e3a8a]')}`}></div>
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
-              
-              <div className="relative z-10 w-full md:w-2/3 p-8 md:p-12 text-left">
-                <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4 leading-snug">
-                  {config.ctaTitle || "Siap Berangkat Umroh?"}
-                </h2>
-                <p className="text-blue-100 mb-6 text-sm md:text-base max-w-xl leading-relaxed">
-                  {config.ctaDesc || "Percayakan perjalanan ibadah Anda bersama Enka Imron Mandiri. Kami siap melayani dengan amanah dan sepenuh hati."}
-                </p>
-                <Link to={config.ctaBtnLink || "https://wa.me/6281234567890"} target="_blank" className="inline-block bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-colors text-sm md:text-base">
-                  {config.ctaBtnText || "Hubungi Kami Sekarang"}
-                </Link>
-              </div>
+        <div className="mt-16 md:mt-24">
+          <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[200px] md:min-h-[250px] flex items-center ${config?.ctaBgColor || 'bg-[#1e3a8a]'}`}>
+            <div className="absolute inset-0 w-full h-full">
+              <img src={config?.ctaBg || "https://images.unsplash.com/photo-1565552643982-b5e13d9646b9?q=80&w=2000"} className={`w-full h-full object-cover ${config?.ctaBgPos || 'object-center'}`} />
+            </div>
+            <div className={`absolute inset-0 bg-gradient-to-r ${getCtaGradient(config?.ctaBgColor || 'bg-[#1e3a8a]')}`}></div>
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
+            
+            <div className="relative z-10 w-full md:w-2/3 p-8 md:p-12 text-left">
+              <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4 leading-snug">
+                {config?.ctaTitle || "Siap Berangkat Umroh?"}
+              </h2>
+              <p className="text-blue-100 mb-6 text-sm md:text-base max-w-xl leading-relaxed">
+                {config?.ctaDesc || "Percayakan perjalanan ibadah Anda bersama Enka Imron Mandiri. Kami siap melayani dengan amanah dan sepenuh hati."}
+              </p>
+              <a href={linkWaCta} target="_blank" rel="noopener noreferrer" className="inline-block bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-colors text-sm md:text-base">
+                {config?.ctaBtnText || "Hubungi Kami Sekarang"}
+              </a>
             </div>
           </div>
-        )}
+        </div>
 
       </div>
+
+      {/* ================= MODAL POP-UP LIGHTBOX FLYER / FOTO ================= */}
+      {lightboxImg && (
+        <div 
+          onClick={() => setLightboxImg(null)} 
+          className="fixed inset-0 z-[300] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 overflow-y-auto"
+        >
+          <div className="flex items-center gap-3 mb-4 z-10" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={() => handleDownloadImage(lightboxImg, paket.title)} 
+              className="bg-[#f59e0b] hover:bg-yellow-500 text-black font-bold px-5 py-2.5 rounded-xl text-xs md:text-sm flex items-center gap-2 shadow-lg transition"
+            >
+              <Download size={18} /> Download Brosur
+            </button>
+            <button 
+              onClick={() => setLightboxImg(null)} 
+              className="bg-white/10 hover:bg-red-500 text-white p-2.5 rounded-xl transition border border-white/20"
+              title="Tutup"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="max-w-3xl w-full flex justify-center items-center" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={lightboxImg} 
+              alt="Brosur Paket" 
+              className="max-h-[82vh] w-auto object-contain rounded-2xl shadow-2xl border border-white/10" 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

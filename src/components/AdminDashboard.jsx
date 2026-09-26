@@ -69,9 +69,9 @@ function AdminDashboard() {
   }, []);
 
   // ================= TEMPLATE DATA & CONFIGURATIONS =================
-  const initialUmroh = { title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", keretaCepat: "tidak", tampilBadge: "ya", badge: "Tidak Ada", badgeColor: "", image: "", deskripsi: "", informasiTambahan: [] };
-  const initialDomestik = { title: "", daerah: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Bus", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", image: "", deskripsi: "", informasiTambahan: [] };
-  const initialInternasional = { title: "", negara: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Pesawat", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", image: "", deskripsi: "", informasiTambahan: [] }; 
+  const initialUmroh = { title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", keretaCepat: "tidak", tampilBadge: "ya", badge: "Tidak Ada", badgeColor: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
+  const initialDomestik = { title: "", daerah: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Bus", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
+  const initialInternasional = { title: "", negara: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Pesawat", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] }; 
   const initialDaerah = { title: "", image: "", status: "Aktif" };
   const initialDaerahInt = { title: "", image: "", status: "Aktif" }; 
   const initialBerita = { title: "", date: "", image: "", text: "", category: "Berita", tipe: "Umroh" }; 
@@ -82,10 +82,11 @@ function AdminDashboard() {
   const initialLayanan = { title: "", deskripsi: "", image: "", icon: "Plane", color: "bg-[#1e3a8a]", link: "/domestik" };
   const initialTestimoni = { name: "", service: "Paket Umroh", img: "", text: "", stars: "5" };
   const initialFaq = { pertanyaan: "", jawaban: "", kategori: "Umum" };
-  const initialUser = { name: "", email: "", password: "", role: "Admin Paket", status: "Aktif" };
+  const initialUser = { name: "", username: "", email: "", password: "", role: "Admin Paket", status: "Aktif" };
 
   const initialIdentitas = { 
     namaBesar: "ENKA IMRON MANDIRI", tagline: "Travel Domestik • Internasional • Umroh", taglineSize: "text-[8px] md:text-[9px]", 
+    noWa: "6281234567890", noWaUmroh: "", noWaDomestik: "", noWaInternasional: "",
     lisensi: "Berizin Resmi Kemenag RI No. 1234 Tahun 2024", lisensiIcon: "ShieldCheck",
     topBarKanan: "Layanan Pelanggan: 08.00 - 17.00 WIB", topBarKananIcon: "Clock",
     logoNavbar: "", logoFooter: "", faviconMode: "logoNavbar", customFavicon: "" 
@@ -307,17 +308,20 @@ function AdminDashboard() {
   const handleSubmit = async (e) => { 
     e.preventDefault(); setIsSubmitting(true); 
 
-    // KHUSUS MANAJEMEN USER & ROLE (Membuat Akun Firebase Auth Tanpa Logout Admin Saat Ini)
+    // KHUSUS MANAJEMEN USER & ROLE (Menggunakan Username)
     if (activeTab === "users") {
       try {
+        const cleanUsername = (formUser.username || "").trim().toLowerCase().replace(/\s+/g, "");
+        const generatedEmail = cleanUsername.includes("@") ? cleanUsername : `${cleanUsername}@enkaimron.id`;
+
         if (editId) {
           await updateDoc(doc(db, "users_admin", editId), {
             name: formUser.name,
-            email: formUser.email,
+            username: cleanUsername,
             role: formUser.role,
             status: formUser.status
           });
-          showAlert("Role & Data User diperbarui.", "success");
+          showAlert("Role & Status User diperbarui.", "success");
         } else {
           const secondaryAppName = "SecondaryApp";
           let secondaryApp = getApps().find(app => app.name === secondaryAppName);
@@ -325,23 +329,24 @@ function AdminDashboard() {
             secondaryApp = initializeApp(auth.app.options, secondaryAppName);
           }
           const secondaryAuth = getAuth(secondaryApp);
-          const userCred = await createUserWithEmailAndPassword(secondaryAuth, formUser.email, formUser.password);
+          const userCred = await createUserWithEmailAndPassword(secondaryAuth, generatedEmail, formUser.password);
           await signOut(secondaryAuth);
 
           await addDoc(collection(db, "users_admin"), {
             uid: userCred.user.uid,
             name: formUser.name,
-            email: formUser.email,
+            username: cleanUsername,
+            email: generatedEmail,
             role: formUser.role,
             status: formUser.status,
             createdAt: new Date().toISOString().split('T')[0]
           });
-          showAlert("Akun User Baru berhasil dibuat dan siap digunakan login!", "success");
+          showAlert(`User "${cleanUsername}" berhasil dibuat dan siap digunakan login!`, "success");
         }
         setIsFormOpen(false);
         fetchData();
       } catch (error) {
-        showAlert("Gagal membuat user: " + (error.message || "Pastikan email valid & password min. 6 karakter."), "error");
+        showAlert("Gagal membuat user: Username mungkin sudah terpakai atau password kurang dari 6 karakter.", "error");
       } finally {
         setIsSubmitting(false);
       }
@@ -595,26 +600,86 @@ function AdminDashboard() {
             <form onSubmit={handleSaveIdentitas} className="max-w-5xl mx-auto space-y-8 pb-10">
               <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b pb-4">1. Identitas & Logo Perusahaan (Navbar, Footer & Favicon)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div><label className={labelClass}>Nama Perusahaan / Merek</label><input type="text" name="namaBesar" value={formIdentitas.namaBesar} onChange={handleIdentitasChange} className={inputClass} placeholder="Contoh: ENKA IMRON MANDIRI" required/></div>
-                  <div><label className={labelClass}>Tagline / Keterangan Bawah</label><input type="text" name="tagline" value={formIdentitas.tagline} onChange={handleIdentitasChange} className={inputClass} placeholder="Travel Domestik • Internasional • Umroh"/></div>
-                  <div><label className={labelClass}>Ukuran Font Tagline (Khusus Navbar)</label><select name="taglineSize" value={formIdentitas.taglineSize} onChange={handleIdentitasChange} className={inputClass}><option value="text-[8px] md:text-[9px]">Sangat Kecil (Standar)</option><option value="text-[10px] md:text-xs">Kecil</option><option value="text-xs md:text-sm">Sedang</option></select></div>
-                  <div className="hidden md:block"></div>
-                  
+                
+                {/* BARIS INPUT TEKS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div>
-                    <label className={labelClass}>Upload Logo Navbar (Dasar Terang)</label>
-                    <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoNavbar', 'identitas')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50 outline-none"/>
-                    {formIdentitas.logoNavbar && <img src={formIdentitas.logoNavbar} alt="Preview Navbar" className="h-10 mt-2 object-contain border p-1 rounded bg-white" />}
+                    <label className={labelClass}>Nama Perusahaan / Merek</label>
+                    <input type="text" name="namaBesar" value={formIdentitas.namaBesar} onChange={handleIdentitasChange} className={inputClass} placeholder="Contoh: ENKA IMRON MANDIRI" required/>
                   </div>
                   <div>
-                    <label className={labelClass}>Upload Logo Footer (Dasar Gelap)</label>
-                    <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoFooter', 'identitas')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50 outline-none"/>
-                    {formIdentitas.logoFooter && <img src={formIdentitas.logoFooter} alt="Preview Footer" className="h-10 mt-2 object-contain border p-1 rounded bg-[#1e3a8a]" />}
+                    <label className={labelClass}>Tagline / Keterangan Bawah</label>
+                    <input type="text" name="tagline" value={formIdentitas.tagline} onChange={handleIdentitasChange} className={inputClass} placeholder="Travel Domestik • Internasional • Umroh"/>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ukuran Font Tagline (Khusus Navbar)</label>
+                    <select name="taglineSize" value={formIdentitas.taglineSize} onChange={handleIdentitasChange} className={inputClass}>
+                      <option value="text-[8px] md:text-[9px]">Sangat Kecil (Standar)</option>
+                      <option value="text-[10px] md:text-xs">Kecil</option>
+                      <option value="text-xs md:text-sm">Sedang</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* PENGATURAN NOMOR WHATSAPP PER DIVISI */}
+                <div className="bg-emerald-50/60 p-5 rounded-2xl border border-emerald-100 mb-6">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-bold text-emerald-900 uppercase">Pengaturan Nomor WhatsApp Admin per Divisi</h4>
+                    <p className="text-xs text-emerald-700 mt-0.5">Jika nomor divisi dikosongkan, sistem akan otomatis menggunakan Nomor WA CS Utama.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-3.5 rounded-xl border border-emerald-100 shadow-sm">
+                      <label className="text-[11px] font-bold text-emerald-700 uppercase block mb-1.5">WA CS Utama (Umum) *</label>
+                      <input type="text" name="noWa" value={formIdentitas.noWa || ""} onChange={handleIdentitasChange} className={inputClass} placeholder="0812..." required/>
+                    </div>
+                    <div className="bg-white p-3.5 rounded-xl border border-emerald-100 shadow-sm">
+                      <label className="text-[11px] font-bold text-[#f59e0b] uppercase block mb-1.5">WA Admin Umroh</label>
+                      <input type="text" name="noWaUmroh" value={formIdentitas.noWaUmroh || ""} onChange={handleIdentitasChange} className={inputClass} placeholder="Opsional (0812...)"/>
+                    </div>
+                    <div className="bg-white p-3.5 rounded-xl border border-emerald-100 shadow-sm">
+                      <label className="text-[11px] font-bold text-blue-600 uppercase block mb-1.5">WA Admin Domestik</label>
+                      <input type="text" name="noWaDomestik" value={formIdentitas.noWaDomestik || ""} onChange={handleIdentitasChange} className={inputClass} placeholder="Opsional (0812...)"/>
+                    </div>
+                    <div className="bg-white p-3.5 rounded-xl border border-emerald-100 shadow-sm">
+                      <label className="text-[11px] font-bold text-purple-600 uppercase block mb-1.5">WA Admin Internasional</label>
+                      <input type="text" name="noWaInternasional" value={formIdentitas.noWaInternasional || ""} onChange={handleIdentitasChange} className={inputClass} placeholder="Opsional (0812...)"/>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BARIS UPLOAD LOGO (SEJAJAR KIRI & KANAN DENGAN KOTAK PREVIEW RAPI) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-gray-200 flex flex-col justify-between">
+                    <div>
+                      <label className={labelClass}>Upload Logo Navbar (Dasar Terang)</label>
+                      <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoNavbar', 'identitas')} className="w-full text-sm border border-gray-200 p-2 rounded-xl bg-white outline-none mb-4"/>
+                    </div>
+                    <div className="h-20 bg-white border border-dashed border-gray-300 rounded-xl flex items-center justify-center p-2">
+                      {formIdentitas.logoNavbar ? (
+                        <img src={formIdentitas.logoNavbar} alt="Preview Navbar" className="max-h-14 object-contain" />
+                      ) : (
+                        <span className="text-xs text-gray-400 font-medium">Belum ada logo diupload</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-gray-200 flex flex-col justify-between">
+                    <div>
+                      <label className={labelClass}>Upload Logo Footer (Dasar Gelap)</label>
+                      <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'logoFooter', 'identitas')} className="w-full text-sm border border-gray-200 p-2 rounded-xl bg-white outline-none mb-4"/>
+                    </div>
+                    <div className="h-20 bg-[#1e3a8a] border border-blue-900 rounded-xl flex items-center justify-center p-2">
+                      {formIdentitas.logoFooter ? (
+                        <img src={formIdentitas.logoFooter} alt="Preview Footer" className="max-h-14 object-contain" />
+                      ) : (
+                        <span className="text-xs text-blue-200 font-medium">Belum ada logo diupload</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* PENGATURAN FAVICON */}
-                <div className="border-t border-gray-100 pt-6 mt-4 bg-slate-50 p-5 rounded-2xl">
+                <div className="border-t border-gray-100 pt-6 mt-6 bg-slate-50 p-5 rounded-2xl border border-gray-200">
                   <label className="text-sm font-bold text-[#1e3a8a] uppercase mb-3 block">Pengaturan Ikon Tab Browser (Favicon)</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                     <div>
@@ -956,7 +1021,7 @@ function AdminDashboard() {
                 <thead>
                   <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
                     <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Kategori" : activeTab === "users" ? "Role Akses" : "Visual"}</th>
-                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Pertanyaan" : activeTab === "users" ? "Nama & Email Pengelola" : "Informasi Utama"}</th>
+                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Pertanyaan" : activeTab === "users" ? "Nama & Username Pengelola" : "Informasi Utama"}</th>
                     {activeTab === "berita" && <th className="px-6 py-4 font-semibold">Tanggal Terbit</th>}
                     {activeTab === "users" && <th className="px-6 py-4 font-semibold">Status</th>}
                     <th className="px-6 py-4 font-semibold text-right">Aksi</th>
@@ -986,7 +1051,11 @@ function AdminDashboard() {
                             {(activeTab === 'daerah' || activeTab === 'daerah_internasional') && (<span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{item.status || 'Aktif'}</span>)}
                             {activeTab === 'berita' && (<span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider bg-blue-100 text-blue-600">{item.tipe || 'Umroh'}</span>)}
                           </div>
-                          <div className="text-xs text-gray-500 line-clamp-1">{item.email || item.deskripsi || item.text || item.daerah || item.negara || item.service || item.jawaban || (item.text && item.text.replace(/<[^>]*>?/gm, ''))}</div>
+                          <div className="text-xs text-gray-500 line-clamp-1">
+                            {activeTab === "users" 
+                              ? `Username: ${item.username || (item.email ? item.email.split('@')[0] : '-')}` 
+                              : (item.deskripsi || item.text || item.daerah || item.negara || item.service || item.jawaban || (item.text && item.text.replace(/<[^>]*>?/gm, '')))}
+                          </div>
                         </td>
                         
                         {activeTab === "berita" && (
@@ -1035,7 +1104,7 @@ function AdminDashboard() {
             <div className="p-8 overflow-y-auto bg-slate-50 custom-scrollbar">
               <form id="dataForm" onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
                 
-                {/* FORM MANAJEMEN USER & ROLE */}
+                {/* FORM MANAJEMEN USER & ROLE (DENGAN USERNAME) */}
                 {activeTab === "users" && (
                   <div className="col-span-2 flex flex-col gap-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1044,8 +1113,17 @@ function AdminDashboard() {
                         <input type="text" name="name" value={formUser.name} onChange={(e) => handleChange(e, setFormUser, formUser)} placeholder="Contoh: Ahmad Fauzi" className={inputClass} required />
                       </div>
                       <div>
-                        <label className={labelClass}>Email Login</label>
-                        <input type="email" name="email" value={formUser.email} onChange={(e) => handleChange(e, setFormUser, formUser)} disabled={!!editId} placeholder="staf@enkaimron.com" className={`${inputClass} ${editId ? 'bg-gray-100 cursor-not-allowed' : ''}`} required />
+                        <label className={labelClass}>Username Login (Tanpa Spasi)</label>
+                        <input 
+                          type="text" 
+                          name="username" 
+                          value={formUser.username || (formUser.email ? formUser.email.split('@')[0] : '')} 
+                          onChange={(e) => setFormUser({ ...formUser, username: e.target.value.toLowerCase().replace(/\s+/g, '') })} 
+                          disabled={!!editId} 
+                          placeholder="Contoh: ahmad_umroh" 
+                          className={`${inputClass} ${editId ? 'bg-gray-100 cursor-not-allowed' : ''}`} 
+                          required 
+                        />
                       </div>
                     </div>
 
@@ -1070,8 +1148,8 @@ function AdminDashboard() {
                       <div>
                         <label className={labelClass}>Status Akun</label>
                         <select name="status" value={formUser.status} onChange={(e) => handleChange(e, setFormUser, formUser)} className={inputClass}>
-                          <option value="Aktif">Aktif</option>
-                          <option value="Nonaktif">Nonaktif</option>
+                          <option value="Aktif">Aktif (Bisa Login)</option>
+                          <option value="Nonaktif">Nonaktif (Blokir Akses)</option>
                         </select>
                       </div>
                     </div>
