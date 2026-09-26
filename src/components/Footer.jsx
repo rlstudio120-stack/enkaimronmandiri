@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { MapPin, Phone, Mail, MessageCircle, Globe } from "lucide-react";
@@ -15,10 +15,18 @@ const Tiktok = ({ size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width
 const SocialIcons = { Facebook, Instagram, Twitter, Youtube, Linkedin, Tiktok };
 const ContactIcons = { Alamat: MapPin, Telepon: Phone, Email: Mail };
 
+const formatWaNumber = (num) => {
+  if (!num) return "";
+  let clean = num.toString().replace(/\D/g, "");
+  if (clean.startsWith("0")) clean = "62" + clean.slice(1);
+  return clean;
+};
+
 function Footer() {
   const [footerData, setFooterData] = useState(null);
   const [identitas, setIdentitas] = useState(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -45,6 +53,30 @@ function Footer() {
 
   if (loading) return <footer className="bg-[#1e3a8a] text-white pt-10 pb-8 min-h-[300px] flex items-center justify-center"><div className="animate-pulse">Memuat informasi...</div></footer>;
 
+  // Logika Pintar: Menyesuaikan Nomor WA Berdasarkan Halaman yang Sedang Dibuka
+  const getActiveWaLink = () => {
+    const path = location.pathname;
+    const mainWa = formatWaNumber(identitas?.noWa) || "6281234567890";
+    let targetWa = mainWa;
+    let divisiText = "layanan paket perjalanan";
+
+    if (path.includes("umroh")) {
+      targetWa = formatWaNumber(identitas?.noWaUmroh) || mainWa;
+      divisiText = "program perjalanan Ibadah Umroh";
+    } else if (path.includes("domestik")) {
+      targetWa = formatWaNumber(identitas?.noWaDomestik) || mainWa;
+      divisiText = "paket wisata Domestik";
+    } else if (path.includes("internasional")) {
+      targetWa = formatWaNumber(identitas?.noWaInternasional) || mainWa;
+      divisiText = "paket wisata Internasional";
+    }
+
+    const msg = `Halo Admin ${identitas?.namaBesar || "Enka Imron Mandiri"}, saya ingin berkonsultasi mengenai ${divisiText} Anda.`;
+    return `https://wa.me/${targetWa}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const activeWaLink = getActiveWaLink();
+
   return (
     <footer className="bg-[#1e3a8a] text-white pt-12 md:pt-16 pb-8 border-t-[6px] border-[#f59e0b]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -52,7 +84,7 @@ function Footer() {
         {/* ===================== TAMPILAN SMARTPHONE (MOBILE) ===================== */}
         <div className="md:hidden flex flex-col items-center text-center space-y-6 mb-8 border-b border-white/10 pb-8">
           
-          {/* PERBAIKAN: Logo & Nama Sejajar untuk Mobile */}
+          {/* Logo & Nama Sejajar untuk Mobile */}
           <div className="flex items-center justify-center gap-3 text-left">
             {identitas?.logoFooter && (
               <img src={identitas.logoFooter} alt="Logo" className="h-12 object-contain drop-shadow-md shrink-0" />
@@ -75,14 +107,18 @@ function Footer() {
               })}
             </div>
           )}
-          <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" className="w-full max-w-[280px] bg-[#f59e0b] text-black font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2"><MessageCircle size={18} /> Hubungi Kami</a>
+          
+          {/* TOMBOL WA MOBILE DINAMIS */}
+          <a href={activeWaLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-[280px] bg-[#f59e0b] hover:bg-yellow-500 text-black font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-colors">
+            <MessageCircle size={18} /> Hubungi Kami
+          </a>
         </div>
 
         {/* ===================== TAMPILAN LAPTOP/DESKTOP ===================== */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10 border-b border-white/10 pb-12">
           <div className="lg:col-span-2 pr-8">
             
-            {/* PERBAIKAN: Logo & Nama Sejajar untuk Desktop */}
+            {/* Logo & Nama Sejajar untuk Desktop */}
             <div className="flex items-center gap-4 mb-6">
               {identitas?.logoFooter && (
                 <img src={identitas.logoFooter} alt="Logo" className="h-14 object-contain drop-shadow-md shrink-0" />
