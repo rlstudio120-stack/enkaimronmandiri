@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { 
-  LayoutDashboard, MapPin, Tent, LogOut, Plus, Edit3, Trash2, X, ShieldCheck, 
-  Star, Heart, Clock, Award, ThumbsUp, Users, Gem, Bus, Plane, Globe, Box, 
-  MessageSquare, Settings, Zap, Smile, CheckCircle, Compass, BookOpen, Ship, TrainFront,
-  Activity, ArrowLeft, LayoutTemplate, Database, FileText, MonitorSmartphone, Info,
-  ChevronDown, ChevronRight, Building, Banknote, Coins, Wallet, CircleDollarSign, Map, 
-  Calendar, Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, ShoppingBag, 
-  Utensils, Wifi, Landmark, Ticket, Info as InfoIcon, Search, UserPlus, Key
+  Plus, Edit, Edit3, Trash2, LogOut, Package, MapPin, Globe, FileText, 
+  Settings, Users, HelpCircle, ShieldCheck, Star, Heart, Clock, 
+  Award, ThumbsUp, Gem, Bus, Tent, Plane, Box, Zap, Smile, 
+  CheckCircle, Compass, BookOpen, Ship, TrainFront, Building, 
+  Banknote, Coins, Wallet, CircleDollarSign, Map, Calendar, 
+  Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, 
+  ShoppingBag, Utensils, Wifi, Landmark, Ticket, X, Key, Menu,
+  LayoutDashboard, Activity, ChevronDown, ChevronRight, LayoutTemplate, 
+  MonitorSmartphone, Info, Info as InfoIcon, MessageSquare, UserPlus, 
+  ArrowLeft, Search, Copy
 } from "lucide-react";
 import JoditEditor from "jodit-react";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where } from "firebase/firestore";
@@ -14,12 +17,14 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase"; 
 import { useNavigate } from "react-router-dom";
+import GantiPasswordModal from "./GantiPasswordModal";
 
 const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Tent, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass, BookOpen, Ship, TrainFront, FileText, Building, Banknote, Coins, Wallet, CircleDollarSign, Map, Calendar, Milestone, Route, Camera, Phone, Mail, Sun, Moon, Coffee, ShoppingBag, Utensils, Wifi, Landmark, Ticket };
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // State Role & Info User yang sedang Login
   const [currentUserInfo, setCurrentUserInfo] = useState({ email: "", role: "Super Admin", name: "Admin Utama" });
@@ -43,9 +48,12 @@ function AdminDashboard() {
   const [customAlert, setCustomAlert] = useState({ show: false, message: "", type: "info", onConfirm: null });
   const [stats, setStats] = useState({ umroh: 0, domestik: 0, internasional: 0, testimoni: 0, berita: 0 });
 
-  // FITUR PENCARIAN TABEL
+  // FITUR PENCARIAN TABEL & TUTUP SIDEBAR MOBILE SAAT PINDAH MENU
   const [searchQuery, setSearchQuery] = useState("");
-  useEffect(() => { setSearchQuery(""); }, [activeTab]);
+  useEffect(() => { 
+    setSearchQuery(""); 
+    setIsMobileSidebarOpen(false);
+  }, [activeTab]);
 
   // Cek Role User yang sedang login
   useEffect(() => {
@@ -69,9 +77,9 @@ function AdminDashboard() {
   }, []);
 
   // ================= TEMPLATE DATA & CONFIGURATIONS =================
-  const initialUmroh = { title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", keretaCepat: "tidak", tampilBadge: "ya", badge: "Tidak Ada", badgeColor: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
-  const initialDomestik = { title: "", daerah: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Bus", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
-  const initialInternasional = { title: "", negara: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Pesawat", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] }; 
+  const initialUmroh = { title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", keretaCepat: "tidak", tampilBadge: "ya", badge: "Tidak Ada", badgeColor: "", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
+  const initialDomestik = { title: "", daerah: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Bus", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
+  const initialInternasional = { title: "", negara: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Pesawat", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
   const initialDaerah = { title: "", image: "", status: "Aktif" };
   const initialDaerahInt = { title: "", image: "", status: "Aktif" }; 
   const initialBerita = { title: "", date: "", image: "", text: "", category: "Berita", tipe: "Umroh" }; 
@@ -89,7 +97,8 @@ function AdminDashboard() {
     noWa: "6281234567890", noWaUmroh: "", noWaDomestik: "", noWaInternasional: "",
     lisensi: "Berizin Resmi Kemenag RI No. 1234 Tahun 2024", lisensiIcon: "ShieldCheck",
     topBarKanan: "Layanan Pelanggan: 08.00 - 17.00 WIB", topBarKananIcon: "Clock",
-    logoNavbar: "", logoFooter: "", faviconMode: "logoNavbar", customFavicon: "" 
+    logoNavbar: "", logoFooter: "", faviconMode: "logoNavbar", customFavicon: "",
+    loginLogoMode: "logoFooter"
   };
   const initialFooter = { desc: "Melayani perjalanan Domestik, Internasional, dan Umroh dengan penuh amanah dan profesionalisme.", socials: [], contacts: [{ tipe: "Alamat", isi: "Jl. Raya Condet No. 18" }], copyright: "© 2026 Enka Imron Mandiri. All rights reserved." };
   const initialConfig = { heroTitle: "Perjalanan Anda,\nAmanah Kami", heroDesc: "Melayani perjalanan Domestik, Internasional, dan Umroh.", heroBg: "", showBadges: "ya", heroTitleSize: "text-[32px] md:text-5xl lg:text-6xl", heroBgPos: "bg-center", b1Text: "Terpercaya", b1Icon: "ShieldCheck", b2Text: "Harga Terbaik", b2Icon: "Star", b3Text: "Pelayanan Prima", b3Icon: "Heart", promoBg: "", promoSmall: "Paket Umroh 2024", promoTitle: "Berangkat Nyaman,\nIbadah Khusyuk", promoBtn: "Cek Promo", promoPrice: "25", promoLink: "/umroh", promoBgColor: "bg-[#0f172a]", promoBgPos: "object-center", testiAutoSlide: "ya" };
@@ -137,7 +146,6 @@ function AdminDashboard() {
     if (activeTab === "config_identitas") { const snap = await getDoc(doc(db, "settings", "identitas")); if (snap.exists()) setFormIdentitas({ ...initialIdentitas, ...snap.data() }); return; }
     if (activeTab === "config_footer") { const snap = await getDoc(doc(db, "settings", "footer")); if (snap.exists()) setFormFooter({ ...initialFooter, ...snap.data() }); return; }
     
-    // PERBAIKAN: Ambil semua paket (Umroh, Domestik, Internasional) untuk pilihan Link Banner Promo
     if (activeTab === "config") { 
       const snap = await getDoc(doc(db, "settings", "home")); 
       if (snap.exists()) setFormConfig({ ...initialConfig, ...snap.data() }); 
@@ -249,6 +257,35 @@ function AdminDashboard() {
     setIsFormOpen(true); 
   };
 
+  const openDuplicateModal = (item) => {
+    setEditId(null);
+    const { id, ...cleanItem } = item;
+    const copyTitle = `${item.title} (Salinan)`;
+
+    if (activeTab === "umroh") {
+      setFormUmroh({ ...initialUmroh, ...cleanItem, title: copyTitle });
+    } else if (activeTab === "domestik") {
+      setFormDomestik({
+        ...initialDomestik,
+        ...cleanItem,
+        title: copyTitle,
+        price: item.price || item.hargaOpenTrip || item.hargaPrivateTrip,
+        hargaPrivate: item.hargaPrivate || initialDomestik.hargaPrivate,
+        transportasi: item.transportasi || initialDomestik.transportasi
+      });
+    } else if (activeTab === "internasional") {
+      setFormInternasional({
+        ...initialInternasional,
+        ...cleanItem,
+        title: copyTitle,
+        price: item.price || item.hargaOpenTrip || item.hargaPrivateTrip,
+        hargaPrivate: item.hargaPrivate || initialInternasional.hargaPrivate,
+        transportasi: item.transportasi || initialInternasional.transportasi
+      });
+    }
+    setIsFormOpen(true);
+  };
+
   const joditConfig = { height: 300, askBeforePasteHTML: false, askBeforePasteFromWord: false, defaultActionOnPaste: "insert_as_html" };
   const [isUploading, setIsUploading] = useState(false);
 
@@ -281,11 +318,21 @@ function AdminDashboard() {
 
   const handleTestiImage = async (e) => { const file = e.target.files[0]; if (!file) return; setIsUploading(true); const formData = new FormData(); formData.append("file", file); formData.append("upload_preset", "ed8ovogp"); try { const response = await fetch(`https://api.cloudinary.com/v1_1/h8p2mssb/image/upload`, { method: "POST", body: formData }); const data = await response.json(); if (data.secure_url) setFormTestimoni({ ...formTestimoni, img: data.secure_url }); } catch (error) {} finally { setIsUploading(false); } };
 
+  const handleFlyerUpload = async (e, setFormFunc, stateData) => {
+    const file = e.target.files[0]; if (!file) return; setIsUploading(true);
+    const formData = new FormData(); formData.append("file", file); formData.append("upload_preset", "ed8ovogp");
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/h8p2mssb/image/upload`, { method: "POST", body: formData });
+      const data = await response.json();
+      if (data.secure_url) setFormFunc({ ...stateData, flyer: data.secure_url });
+      else alert("Gagal mengunggah flyer.");
+    } catch (error) { alert("Terjadi kesalahan jaringan."); } finally { setIsUploading(false); }
+  };
+
   const handleSaveIdentitas = async (e) => { 
     e.preventDefault(); setIsSubmitting(true); 
     try { 
       await setDoc(doc(db, "settings", "identitas"), formIdentitas); 
-      // Terapkan langsung favicon baru di browser
       const favUrl = formIdentitas.faviconMode === "logoFooter" ? formIdentitas.logoFooter 
                    : formIdentitas.faviconMode === "custom" ? formIdentitas.customFavicon 
                    : formIdentitas.logoNavbar;
@@ -432,16 +479,35 @@ function AdminDashboard() {
   });
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] font-sans selection:bg-blue-100">
+    <div className="flex h-screen bg-[#f8fafc] font-sans selection:bg-blue-100 overflow-hidden relative">
       
-      {/* ===================== SIDEBAR ===================== */}
-      <div className="w-64 bg-[#0f172a] text-white flex flex-col shadow-2xl z-20 shrink-0">
-        <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-          <div className="bg-blue-600 p-2 rounded-lg"><LayoutDashboard size={20}/></div>
-          <div className="overflow-hidden">
-            <h2 className="text-base font-bold truncate">{currentUserInfo.name}</h2>
-            <p className="text-[10px] text-[#f59e0b] font-bold uppercase tracking-wider">{currentUserInfo.role}</p>
+      {/* OVERLAY GELAP SAAT MENU BURGER DIBUKA DI SMARTPHONE */}
+      {isMobileSidebarOpen && (
+        <div 
+          onClick={() => setIsMobileSidebarOpen(false)} 
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 lg:hidden"
+        ></div>
+      )}
+
+      {/* ===================== SIDEBAR (RESPONSIF MOBILE & DESKTOP) ===================== */}
+      <div className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0f172a] text-white flex flex-col shadow-2xl shrink-0 transform transition-transform duration-300 ease-in-out ${
+        isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      }`}>
+        <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-800">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="bg-blue-600 p-2 rounded-lg shrink-0"><LayoutDashboard size={20}/></div>
+            <div className="overflow-hidden">
+              <h2 className="text-base font-bold truncate">{currentUserInfo.name}</h2>
+              <p className="text-[10px] text-[#f59e0b] font-bold uppercase tracking-wider">{currentUserInfo.role}</p>
+            </div>
           </div>
+          {/* Tombol Tutup (X) Khusus Smartphone */}
+          <button 
+            onClick={() => setIsMobileSidebarOpen(false)} 
+            className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 shrink-0"
+          >
+            <X size={18} />
+          </button>
         </div>
         
         <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
@@ -523,16 +589,24 @@ function AdminDashboard() {
           )}
         </nav>
         
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 space-y-2.5">
+          <GantiPasswordModal />
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white py-2.5 rounded-xl transition shadow-lg shadow-red-500/30"><LogOut size={16} /><span className="text-sm font-bold">Keluar Sistem</span></button>
         </div>
       </div>
 
       {/* ===================== KONTEN UTAMA ===================== */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="bg-white border-b border-gray-100 px-8 py-5 flex justify-between items-center z-10 shrink-0">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 capitalize">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden w-full">
+        <header className="bg-white border-b border-gray-100 px-4 md:px-8 py-4 md:py-5 flex justify-between items-center gap-3 z-10 shrink-0">
+          <div className="flex items-center gap-3 overflow-hidden">
+            {/* TOMBOL BURGER KHUSUS SMARTPHONE */}
+            <button 
+              onClick={() => setIsMobileSidebarOpen(true)} 
+              className="lg:hidden p-2 rounded-xl bg-slate-100 text-[#1e3a8a] hover:bg-blue-50 transition shrink-0"
+            >
+              <Menu size={22} />
+            </button>
+            <h1 className="text-base md:text-2xl font-bold text-gray-800 capitalize truncate">
               {activeTab === "dashboard" ? "Dashboard Sistem" 
                 : activeTab === "config_identitas" ? "Pengaturan Identitas, Favicon & Top Bar"
                 : activeTab === "config_footer" ? "Pengaturan Footer Website"
@@ -550,24 +624,24 @@ function AdminDashboard() {
             </h1>
           </div>
           {!noTablePages.includes(activeTab) && (
-            <button onClick={openAddModal} className="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition hover:bg-blue-800">
-              <Plus size={18} /> {activeTab === "users" ? "Tambah User Baru" : "Tambah Data"}
+            <button onClick={openAddModal} className="bg-[#1e3a8a] text-white px-3.5 md:px-5 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2 transition hover:bg-blue-800 shrink-0">
+              <Plus size={16} /> <span>{activeTab === "users" ? "Tambah User" : "Tambah Data"}</span>
             </button>
           )}
         </header>
 
-        <div className="flex-1 p-8 overflow-y-auto bg-[#f8fafc]">
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto bg-[#f8fafc]">
           
           {/* DASHBOARD OVERVIEW */}
           {activeTab === "dashboard" && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-[#1e3a8a] to-blue-600 rounded-3xl p-8 md:p-10 text-white shadow-xl relative overflow-hidden"><div className="absolute top-0 right-0 opacity-10 w-64 h-64 bg-white rounded-full -mr-20 -mt-20"></div><div className="relative z-10"><p className="text-blue-200 font-semibold tracking-wider text-sm mb-2 uppercase">Workspace System • {currentUserInfo.role}</p><h2 className="text-3xl md:text-4xl font-bold mb-3">Selamat Datang, {currentUserInfo.name}! 👋</h2><p className="text-blue-100 text-sm md:text-base max-w-xl leading-relaxed">Pantau kinerja website, kelola paket perjalanan, dan perbarui informasi jamaah Anda dari satu panel kontrol yang elegan.</p></div></div>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="bg-gradient-to-r from-[#1e3a8a] to-blue-600 rounded-3xl p-6 md:p-10 text-white shadow-xl relative overflow-hidden"><div className="absolute top-0 right-0 opacity-10 w-64 h-64 bg-white rounded-full -mr-20 -mt-20"></div><div className="relative z-10"><p className="text-blue-200 font-semibold tracking-wider text-xs md:text-sm mb-2 uppercase">Workspace System • {currentUserInfo.role}</p><h2 className="text-2xl md:text-4xl font-bold mb-3">Selamat Datang, {currentUserInfo.name}! 👋</h2><p className="text-blue-100 text-xs md:text-base max-w-xl leading-relaxed">Pantau kinerja website, kelola paket perjalanan, dan perbarui informasi jamaah Anda dari satu panel kontrol yang elegan.</p></div></div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="bg-gradient-to-br from-cyan-500 to-blue-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><Tent size={100}/></div><div className="relative z-10"><p className="text-cyan-100 font-semibold text-xs mb-1">Paket Umroh</p><h3 className="text-3xl font-bold mb-3">{stats.umroh}</h3>{canAccessPaket && <button onClick={() => setActiveTab("umroh")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
                 <div className="bg-gradient-to-br from-emerald-500 to-green-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><MapPin size={100}/></div><div className="relative z-10"><p className="text-emerald-100 font-semibold text-xs mb-1">Trip Domestik</p><h3 className="text-3xl font-bold mb-3">{stats.domestik}</h3>{canAccessPaket && <button onClick={() => setActiveTab("domestik")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><Globe size={100}/></div><div className="relative z-10"><p className="text-indigo-100 font-semibold text-xs mb-1">Trip Internasional</p><h3 className="text-3xl font-bold mb-3">{stats.internasional}</h3>{canAccessPaket && <button onClick={() => setActiveTab("internasional")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
                 <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><BookOpen size={100}/></div><div className="relative z-10"><p className="text-amber-100 font-semibold text-xs mb-1">Pusat Berita</p><h3 className="text-3xl font-bold mb-3">{stats.berita}</h3>{canAccessBerita && <button onClick={() => setActiveTab("berita")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
-                <div className="bg-gradient-to-br from-rose-500 to-pink-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group"><div className="absolute right-[-10%] top-[-10%] opacity-20"><MessageSquare size={100}/></div><div className="relative z-10"><p className="text-pink-100 font-semibold text-xs mb-1">Testimoni</p><h3 className="text-3xl font-bold mb-3">{stats.testimoni}</h3>{canAccessWeb && <button onClick={() => setActiveTab("testimoni")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
+                <div className="bg-gradient-to-br from-rose-500 to-pink-500 p-5 rounded-2xl text-white shadow-lg relative overflow-hidden group col-span-2 md:col-span-1"><div className="absolute right-[-10%] top-[-10%] opacity-20"><MessageSquare size={100}/></div><div className="relative z-10"><p className="text-pink-100 font-semibold text-xs mb-1">Testimoni</p><h3 className="text-3xl font-bold mb-3">{stats.testimoni}</h3>{canAccessWeb && <button onClick={() => setActiveTab("testimoni")} className="text-[10px] font-bold bg-white/20 px-3 py-1.5 rounded-lg transition">Kelola →</button>}</div></div>
               </div>
             </div>
           )}
@@ -678,24 +752,32 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* PENGATURAN FAVICON */}
-                <div className="border-t border-gray-100 pt-6 mt-6 bg-slate-50 p-5 rounded-2xl border border-gray-200">
-                  <label className="text-sm font-bold text-[#1e3a8a] uppercase mb-3 block">Pengaturan Ikon Tab Browser (Favicon)</label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                {/* PENGATURAN FAVICON & LOGO HALAMAN LOGIN */}
+                <div className="border-t border-gray-100 pt-6 mt-6 bg-slate-50 p-5 rounded-2xl border border-gray-200 space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     <div>
-                      <label className={labelClass}>Sumber Gambar Favicon</label>
+                      <label className="text-xs font-bold text-[#1e3a8a] uppercase mb-2 block">1. Sumber Gambar Ikon Tab (Favicon)</label>
                       <select name="faviconMode" value={formIdentitas.faviconMode || "logoNavbar"} onChange={handleIdentitasChange} className={inputClass}>
-                        <option value="logoNavbar">Gunakan Logo Navbar yang Sudah Diupload</option>
-                        <option value="logoFooter">Gunakan Logo Footer yang Sudah Diupload</option>
+                        <option value="logoNavbar">Gunakan Logo Navbar (Dasar Terang)</option>
+                        <option value="logoFooter">Gunakan Logo Footer (Dasar Gelap)</option>
                         <option value="custom">Upload Gambar Khusus Favicon</option>
                       </select>
+                      {formIdentitas.faviconMode === "custom" && (
+                        <div className="mt-3">
+                          <label className={labelClass}>Upload File Favicon Baru (PNG/ICO)</label>
+                          <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'customFavicon', 'identitas')} className="w-full text-sm border border-gray-200 p-2 rounded-xl bg-white outline-none"/>
+                        </div>
+                      )}
                     </div>
-                    {formIdentitas.faviconMode === "custom" && (
-                      <div>
-                        <label className={labelClass}>Upload File Favicon Baru (PNG/ICO)</label>
-                        <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'customFavicon', 'identitas')} className="w-full text-sm border border-gray-200 p-2 rounded-xl bg-white outline-none"/>
-                      </div>
-                    )}
+
+                    <div>
+                      <label className="text-xs font-bold text-[#1e3a8a] uppercase mb-2 block">2. Logo pada Halaman Login Admin</label>
+                      <select name="loginLogoMode" value={formIdentitas.loginLogoMode || "logoFooter"} onChange={handleIdentitasChange} className={inputClass}>
+                        <option value="logoFooter">Gunakan Logo Footer (Dasar Gelap - Disarankan)</option>
+                        <option value="logoNavbar">Gunakan Logo Navbar (Dengan Bingkai Putih)</option>
+                        <option value="tanpaLogo">Tanpa Logo (Tampilkan Ikon Perisai)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -818,7 +900,7 @@ function AdminDashboard() {
             </form>
           )}
 
-          {/* CONFIG: BERANDA (TERMASUK LINK BANNER PROMO SEMUA DIVISI) */}
+          {/* CONFIG: BERANDA */}
           {activeTab === "config" && (
              <form onSubmit={handleSaveConfig} className="max-w-5xl mx-auto space-y-8 pb-10">
               <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
@@ -1005,7 +1087,7 @@ function AdminDashboard() {
              </form>
           )}
 
-          {/* TABEL DATA UMUM (TERMASUK FAQ DAN MANAJEMEN USER) */}
+          {/* TABEL DATA UMUM (RESPONSIF BISA DIGESER DI SMARTPHONE) */}
           {!noTablePages.includes(activeTab) && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               
@@ -1017,73 +1099,95 @@ function AdminDashboard() {
                 </div>
               </div>
 
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Kategori" : activeTab === "users" ? "Role Akses" : "Visual"}</th>
-                    <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Pertanyaan" : activeTab === "users" ? "Nama & Username Pengelola" : "Informasi Utama"}</th>
-                    {activeTab === "berita" && <th className="px-6 py-4 font-semibold">Tanggal Terbit</th>}
-                    {activeTab === "users" && <th className="px-6 py-4 font-semibold">Status</th>}
-                    <th className="px-6 py-4 font-semibold text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filteredDataList.map((item) => {
-                    const DynamicIcon = IconMap[item.icon] || Star;
-                    return (
-                      <tr key={item.id} className="hover:bg-blue-50/30 transition group">
-                        <td className="px-6 py-4 w-32">
-                          {(activeTab === "mengapa" || activeTab === "layanan" || activeTab === "keunggulan_umroh" || activeTab === "keunggulan_domestik" || activeTab === "keunggulan_internasional") ? (
-                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-md ${item.color || 'bg-[#1e3a8a]'}`}><DynamicIcon size={26} /></div>
-                          ) : activeTab === "testimoni" ? (
-                            <img src={item.img} alt={item.name} className="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200" />
-                          ) : activeTab === "faq" ? (
-                            <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">{item.kategori}</span>
-                          ) : activeTab === "users" ? (
-                            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap inline-block ${item.role === 'Super Admin' ? 'bg-purple-100 text-purple-700' : item.role === 'Admin Paket' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {item.role}
-                            </span>
-                          ) : (<img src={item.image} alt={item.title} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-gray-800 text-base mb-1 flex items-center gap-2">
-                            {item.title || item.name || item.pertanyaan}
-                            {(activeTab === 'daerah' || activeTab === 'daerah_internasional') && (<span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{item.status || 'Aktif'}</span>)}
-                            {activeTab === 'berita' && (<span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider bg-blue-100 text-blue-600">{item.tipe || 'Umroh'}</span>)}
-                          </div>
-                          <div className="text-xs text-gray-500 line-clamp-1">
-                            {activeTab === "users" 
-                              ? `Username: ${item.username || (item.email ? item.email.split('@')[0] : '-')}` 
-                              : (item.deskripsi || item.text || item.daerah || item.negara || item.service || item.jawaban || (item.text && item.text.replace(/<[^>]*>?/gm, '')))}
-                          </div>
-                        </td>
-                        
-                        {activeTab === "berita" && (
-                          <td className="px-6 py-4">
-                            <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-slate-100 px-3 py-1.5 rounded-lg w-max">
-                              <Calendar size={14} className="text-gray-400" />
-                              {item.date}
-                            </span>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[560px]">
+                  <thead>
+                    <tr className="bg-slate-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
+                      <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Kategori" : activeTab === "users" ? "Role Akses" : "Visual"}</th>
+                      <th className="px-6 py-4 font-semibold">{activeTab === "faq" ? "Pertanyaan" : activeTab === "users" ? "Nama & Username Pengelola" : "Informasi Utama"}</th>
+                      {activeTab === "berita" && <th className="px-6 py-4 font-semibold">Tanggal Terbit</th>}
+                      {activeTab === "users" && <th className="px-6 py-4 font-semibold">Status</th>}
+                      <th className="px-6 py-4 font-semibold text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {filteredDataList.map((item) => {
+                      const DynamicIcon = IconMap[item.icon] || Star;
+                      return (
+                        <tr key={item.id} className="hover:bg-blue-50/30 transition group">
+                          <td className="px-6 py-4 w-32">
+                            {(activeTab === "mengapa" || activeTab === "layanan" || activeTab === "keunggulan_umroh" || activeTab === "keunggulan_domestik" || activeTab === "keunggulan_internasional") ? (
+                              <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-md ${item.color || 'bg-[#1e3a8a]'}`}><DynamicIcon size={26} /></div>
+                            ) : activeTab === "testimoni" ? (
+                              <img src={item.img} alt={item.name} className="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200" />
+                            ) : activeTab === "faq" ? (
+                              <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">{item.kategori}</span>
+                            ) : activeTab === "users" ? (
+                              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap inline-block ${item.role === 'Super Admin' ? 'bg-purple-100 text-purple-700' : item.role === 'Admin Paket' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                                {item.role}
+                              </span>
+                            ) : (<img src={item.image} alt={item.title} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />)}
                           </td>
-                        )}
-
-                        {activeTab === "users" && (
                           <td className="px-6 py-4">
-                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                              {item.status || 'Aktif'}
-                            </span>
+                            <div className="font-bold text-gray-800 text-base mb-1 flex items-center gap-2 flex-wrap">
+                              {item.title || item.name || item.pertanyaan}
+                              {(activeTab === 'daerah' || activeTab === 'daerah_internasional') && (<span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{item.status || 'Aktif'}</span>)}
+                              {activeTab === 'berita' && (<span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider bg-blue-100 text-blue-600">{item.tipe || 'Umroh'}</span>)}
+                              
+                              {/* LABEL STATUS KUOTA DI TABEL ADMIN */}
+                              {(activeTab === 'umroh' || activeTab === 'domestik' || activeTab === 'internasional') && (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                  item.statusKuota === 'Full Booked' ? 'bg-red-100 text-red-600' :
+                                  item.statusKuota === 'Terbatas' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-emerald-100 text-emerald-700'
+                                }`}>
+                                  {item.statusKuota === 'Terbatas' ? (item.sisaSeat || 'Seat Terbatas') : (item.statusKuota || 'Tersedia')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500 line-clamp-1">
+                              {activeTab === "users" 
+                                ? `Username: ${item.username || (item.email ? item.email.split('@')[0] : '-')}` 
+                                : (item.deskripsi || item.text || item.daerah || item.negara || item.service || item.jawaban || (item.text && item.text.replace(/<[^>]*>?/gm, '')))}
+                            </div>
                           </td>
-                        )}
+                          
+                          {activeTab === "berita" && (
+                            <td className="px-6 py-4">
+                              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-slate-100 px-3 py-1.5 rounded-lg w-max">
+                                <Calendar size={14} className="text-gray-400" />
+                                {item.date}
+                              </span>
+                            </td>
+                          )}
 
-                        <td className="px-6 py-4 text-right">
-                          <button onClick={() => openEditModal(item)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition mr-1"><Edit3 size={18} /></button>
-                          <button onClick={() => confirmDelete(item.id)} className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition"><Trash2 size={18} /></button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          {activeTab === "users" && (
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                {item.status || 'Aktif'}
+                              </span>
+                            </td>
+                          )}
+
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            {(activeTab === "umroh" || activeTab === "domestik" || activeTab === "internasional") && (
+                              <button 
+                                onClick={() => openDuplicateModal(item)} 
+                                className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition mr-1" 
+                                title="Duplikat Paket Ini"
+                              >
+                                <Copy size={18} />
+                              </button>
+                            )}
+                            <button onClick={() => openEditModal(item)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition mr-1" title="Edit Data"><Edit3 size={18} /></button>
+                            <button onClick={() => confirmDelete(item.id)} className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition" title="Hapus Data"><Trash2 size={18} /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
               {filteredDataList.length === 0 && (
                 <div className="py-20 flex flex-col items-center justify-center text-gray-400">
                   <Search size={40} className="text-gray-200 mb-3" />
@@ -1099,9 +1203,9 @@ function AdminDashboard() {
       {isFormOpen && (
         <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white"><h2 className="text-xl font-bold flex items-center gap-2 text-gray-800"><Edit3 className="text-blue-600"/>{editId ? 'Perbarui Data' : 'Tambah Data Baru'}</h2><button onClick={() => setIsFormOpen(false)} className="text-gray-400 hover:text-red-500 transition outline-none"><X size={26}/></button></div>
+            <div className="px-6 md:px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white"><h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-gray-800"><Edit3 className="text-blue-600"/>{editId ? 'Perbarui Data' : 'Tambah Data Baru'}</h2><button onClick={() => setIsFormOpen(false)} className="text-gray-400 hover:text-red-500 transition outline-none"><X size={26}/></button></div>
             
-            <div className="p-8 overflow-y-auto bg-slate-50 custom-scrollbar">
+            <div className="p-5 md:p-8 overflow-y-auto bg-slate-50 custom-scrollbar">
               <form id="dataForm" onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
                 
                 {/* FORM MANAJEMEN USER & ROLE (DENGAN USERNAME) */}
@@ -1161,8 +1265,33 @@ function AdminDashboard() {
                   <div className="col-span-2 flex flex-col gap-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5"><div className="flex flex-col"><label className={labelClass}>Nama Paket</label><input type="text" name="title" value={formUmroh.title} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} required /></div><div className="flex flex-col"><label className={labelClass}>Harga (Rp)</label><input type="text" value={formatInputNumber(formUmroh.price)} onChange={(e) => handleNumberChange(e, setFormUmroh, formUmroh, 'price')} className={inputClass} required /></div></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"><div className="flex flex-col"><label className={labelClass}>Format Waktu</label><select name="tipeWaktu" value={formUmroh.tipeWaktu} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="bulan">Bulan Saja</option><option value="tanggal">Tanggal Pasti</option></select></div><div className="flex flex-col"><label className={labelClass}>Isi Waktu</label><input type={formUmroh.tipeWaktu==='bulan'?'text':'date'} name="waktuInfo" value={formUmroh.waktuInfo} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} /></div><div className="flex flex-col"><label className={labelClass}>Durasi</label><input type="text" name="duration" value={formUmroh.duration} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} /></div><div className="flex flex-col"><label className={labelClass}>Maskapai</label><input type="text" name="maskapai" value={formUmroh.maskapai} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} /></div></div>
-                    <div className="bg-white p-5 rounded-2xl border border-blue-100 flex flex-col gap-5 shadow-sm"><div className="flex items-center gap-4 border-b border-gray-100 pb-3"><label className="text-sm font-bold text-blue-900">Tampilkan Nama Hotel Spesifik?</label><select name="pakaiNamaHotel" value={formUmroh.pakaiNamaHotel} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className="border border-gray-200 py-1.5 px-3 rounded-lg bg-slate-50 text-sm focus:outline-none"><option value="ya">Ya, Tampilkan</option><option value="tidak">Sembunyikan</option></select></div><div className="grid grid-cols-2 gap-6"><div className="flex flex-col"><label className={labelClass}>Nama Hotel Mekah</label><input type="text" name="hotelMekah" value={formUmroh.hotelMekah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} disabled={formUmroh.pakaiNamaHotel === 'tidak'} className={`w-full border p-3 rounded-xl text-sm focus:outline-none transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100' : 'bg-slate-50'}`}/></div><div className="flex flex-col"><label className={labelClass}>Bintang Mekah</label><select name="bintangMekah" value={formUmroh.bintangMekah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select></div><div className="flex flex-col"><label className={labelClass}>Nama Hotel Madinah</label><input type="text" name="hotelMadinah" value={formUmroh.hotelMadinah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} disabled={formUmroh.pakaiNamaHotel === 'tidak'} className={`w-full border p-3 rounded-xl text-sm focus:outline-none transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100' : 'bg-slate-50'}`}/></div><div className="flex flex-col"><label className={labelClass}>Bintang Madinah</label><select name="bintangMadinah" value={formUmroh.bintangMadinah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select></div></div><div className="border-t border-gray-100 pt-4"><label className={labelClass}>Kereta Cepat Haramain?</label><select name="keretaCepat" value={formUmroh.keretaCepat} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="tidak">Tidak Tersedia</option><option value="ya">Ya, Termasuk Kereta Cepat</option></select></div></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5"><div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formUmroh.badge} onChange={(e) => handleBadgeChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div><div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div></div>
+                    <div className="bg-white p-5 rounded-2xl border border-blue-100 flex flex-col gap-5 shadow-sm"><div className="flex items-center gap-4 border-b border-gray-100 pb-3"><label className="text-sm font-bold text-blue-900">Tampilkan Nama Hotel Spesifik?</label><select name="pakaiNamaHotel" value={formUmroh.pakaiNamaHotel} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className="border border-gray-200 py-1.5 px-3 rounded-lg bg-slate-50 text-sm focus:outline-none"><option value="ya">Ya, Tampilkan</option><option value="tidak">Sembunyikan</option></select></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="flex flex-col"><label className={labelClass}>Nama Hotel Mekah</label><input type="text" name="hotelMekah" value={formUmroh.hotelMekah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} disabled={formUmroh.pakaiNamaHotel === 'tidak'} className={`w-full border p-3 rounded-xl text-sm focus:outline-none transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100' : 'bg-slate-50'}`}/></div><div className="flex flex-col"><label className={labelClass}>Bintang Mekah</label><select name="bintangMekah" value={formUmroh.bintangMekah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select></div><div className="flex flex-col"><label className={labelClass}>Nama Hotel Madinah</label><input type="text" name="hotelMadinah" value={formUmroh.hotelMadinah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} disabled={formUmroh.pakaiNamaHotel === 'tidak'} className={`w-full border p-3 rounded-xl text-sm focus:outline-none transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100' : 'bg-slate-50'}`}/></div><div className="flex flex-col"><label className={labelClass}>Bintang Madinah</label><select name="bintangMadinah" value={formUmroh.bintangMadinah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select></div></div><div className="border-t border-gray-100 pt-4"><label className={labelClass}>Kereta Cepat Haramain?</label><select name="keretaCepat" value={formUmroh.keretaCepat} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="tidak">Tidak Tersedia</option><option value="ya">Ya, Termasuk Kereta Cepat</option></select></div></div>
+                    {/* PENGATURAN STATUS KUOTA UMROH */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                        <div className="flex flex-col">
+                          <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
+                          <select name="statusKuota" value={formUmroh.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}>
+                            <option value="Tersedia">Kuota Tersedia (Hijau)</option>
+                            <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
+                            <option value="Full Booked">Full Booked / Penuh (Merah)</option>
+                          </select>
+                        </div>
+                        {formUmroh.statusKuota === "Terbatas" && (
+                          <div className="flex flex-col">
+                            <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
+                            <input type="text" name="sisaSeat" value={formUmroh.sisaSeat || ""} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} placeholder="Contoh: Sisa 4 Seat" className={inputClass} />
+                          </div>
+                        )}
+                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formUmroh.badge} onChange={(e) => handleBadgeChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div>
+                      <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover (Landscape)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div>
+                      <div className="flex flex-col">
+                        <label className={`${labelClass} text-emerald-600`}>Upload Flyer / Brosur (Opsional)</label>
+                        <input type="file" onChange={(e) => handleFlyerUpload(e, setFormUmroh, formUmroh)} className="w-full border border-emerald-200 p-2 rounded-xl bg-emerald-50/30 text-sm outline-none"/>
+                        {formUmroh.flyer && <span className="text-[10px] text-emerald-600 font-bold mt-1">✓ Flyer sudah terpasang</span>}
+                      </div>
+                    </div>
                     <div className="col-span-2 border-t border-gray-200 pt-6 mt-2"><label className="text-sm font-bold text-gray-800 uppercase mb-3 block">Deskripsi & Itinerary Utama</label><div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm"><JoditEditor value={formUmroh.deskripsi} config={joditConfig} onBlur={(c) => setFormUmroh({...formUmroh, deskripsi: c})} /></div><div className="flex justify-between items-center mt-8 mb-4 border-b border-gray-200 pb-3"><label className="text-sm font-bold text-gray-800 uppercase">Informasi Tambahan</label><button type="button" onClick={() => handleAddInfo(setFormUmroh, formUmroh)} className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-xs font-bold flex gap-2 outline-none"><Plus size={16}/> Tambah Info</button></div>{(formUmroh.informasiTambahan || []).map((info, index) => (<div key={index} className="border border-gray-200 rounded-2xl p-5 mb-5 bg-white shadow-sm relative"><button type="button" onClick={() => handleRemoveInfo(setFormUmroh, formUmroh, index)} className="absolute top-5 right-5 text-red-400 hover:text-red-600 transition outline-none"><Trash2 size={18}/></button><input type="text" value={info.judul} onChange={(e) => handleUpdateInfo(setFormUmroh, formUmroh, index, 'judul', e.target.value)} className="border border-gray-200 p-3 rounded-xl w-full mb-4 outline-none font-semibold text-sm" placeholder="Contoh Judul..." /><div className="rounded-xl overflow-hidden border border-gray-200"><JoditEditor value={info.isi} config={{...joditConfig, height: 250}} onBlur={(c) => handleUpdateInfo(setFormUmroh, formUmroh, index, 'isi', c)} /></div></div>))}</div>
                   </div>
                 )}
@@ -1188,7 +1317,32 @@ function AdminDashboard() {
                         ))}
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5"><div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formDomestik.badge} onChange={(e) => handleBadgeChange(e, setFormDomestik, formDomestik)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div><div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div></div>
+                    {/* PENGATURAN STATUS KUOTA DOMESTIK */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                        <div className="flex flex-col">
+                          <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
+                          <select name="statusKuota" value={formDomestik.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormDomestik, formDomestik)} className={inputClass}>
+                            <option value="Tersedia">Kuota Tersedia (Hijau)</option>
+                            <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
+                            <option value="Full Booked">Full Booked / Penuh (Merah)</option>
+                          </select>
+                        </div>
+                        {formDomestik.statusKuota === "Terbatas" && (
+                          <div className="flex flex-col">
+                            <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
+                            <input type="text" name="sisaSeat" value={formDomestik.sisaSeat || ""} onChange={(e) => handleChange(e, setFormDomestik, formDomestik)} placeholder="Contoh: Sisa 5 Seat" className={inputClass} />
+                          </div>
+                        )}
+                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formDomestik.badge} onChange={(e) => handleBadgeChange(e, setFormDomestik, formDomestik)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div>
+                      <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover (Landscape)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div>
+                      <div className="flex flex-col">
+                        <label className={`${labelClass} text-emerald-600`}>Upload Flyer / Brosur (Opsional)</label>
+                        <input type="file" onChange={(e) => handleFlyerUpload(e, setFormDomestik, formDomestik)} className="w-full border border-emerald-200 p-2 rounded-xl bg-emerald-50/30 text-sm outline-none"/>
+                        {formDomestik.flyer && <span className="text-[10px] text-emerald-600 font-bold mt-1">✓ Flyer sudah terpasang</span>}
+                      </div>
+                    </div>
                     <div className="col-span-2 border-t border-gray-200 pt-6 mt-2"><label className="text-sm font-bold text-gray-800 uppercase mb-3 block">Deskripsi & Itinerary Utama</label><div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm"><JoditEditor value={formDomestik.deskripsi} config={joditConfig} onBlur={(c) => setFormDomestik({...formDomestik, deskripsi: c})} /></div><div className="flex justify-between items-center mt-8 mb-4 border-b border-gray-200 pb-3"><label className="text-sm font-bold text-gray-800 uppercase">Informasi Tambahan</label><button type="button" onClick={() => handleAddInfo(setFormDomestik, formDomestik)} className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-xs font-bold flex gap-2 outline-none"><Plus size={16}/> Tambah Info</button></div>{(formDomestik.informasiTambahan || []).map((info, index) => (<div key={index} className="border border-gray-200 rounded-2xl p-5 mb-5 bg-white shadow-sm relative"><button type="button" onClick={() => handleRemoveInfo(setFormDomestik, formDomestik, index)} className="absolute top-5 right-5 text-red-400 hover:text-red-600 transition outline-none"><Trash2 size={18}/></button><input type="text" value={info.judul} onChange={(e) => handleUpdateInfo(setFormDomestik, formDomestik, index, 'judul', e.target.value)} className="border border-gray-200 p-3 rounded-xl w-full mb-4 outline-none font-semibold text-sm" placeholder="Contoh Judul: Harga Rombongan..." /><div className="rounded-xl overflow-hidden border border-gray-200"><JoditEditor value={info.isi} config={{...joditConfig, height: 250}} onBlur={(c) => handleUpdateInfo(setFormDomestik, formDomestik, index, 'isi', c)} /></div></div>))}</div>
                   </div>
                 )}
@@ -1214,7 +1368,32 @@ function AdminDashboard() {
                         ))}
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5"><div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formInternasional.badge} onChange={(e) => handleBadgeChange(e, setFormInternasional, formInternasional)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div><div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div></div>
+                    {/* PENGATURAN STATUS KUOTA INTERNASIONAL */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                        <div className="flex flex-col">
+                          <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
+                          <select name="statusKuota" value={formInternasional.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormInternasional, formInternasional)} className={inputClass}>
+                            <option value="Tersedia">Kuota Tersedia (Hijau)</option>
+                            <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
+                            <option value="Full Booked">Full Booked / Penuh (Merah)</option>
+                          </select>
+                        </div>
+                        {formInternasional.statusKuota === "Terbatas" && (
+                          <div className="flex flex-col">
+                            <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
+                            <input type="text" name="sisaSeat" value={formInternasional.sisaSeat || ""} onChange={(e) => handleChange(e, setFormInternasional, formInternasional)} placeholder="Contoh: Sisa 3 Seat" className={inputClass} />
+                          </div>
+                        )}
+                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formInternasional.badge} onChange={(e) => handleBadgeChange(e, setFormInternasional, formInternasional)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div>
+                      <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover (Landscape)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div>
+                      <div className="flex flex-col">
+                        <label className={`${labelClass} text-emerald-600`}>Upload Flyer / Brosur (Opsional)</label>
+                        <input type="file" onChange={(e) => handleFlyerUpload(e, setFormInternasional, formInternasional)} className="w-full border border-emerald-200 p-2 rounded-xl bg-emerald-50/30 text-sm outline-none"/>
+                        {formInternasional.flyer && <span className="text-[10px] text-emerald-600 font-bold mt-1">✓ Flyer sudah terpasang</span>}
+                      </div>
+                    </div>
                     <div className="col-span-2 border-t border-gray-200 pt-6 mt-2"><label className="text-sm font-bold text-gray-800 uppercase mb-3 block">Deskripsi & Itinerary Utama</label><div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm"><JoditEditor value={formInternasional.deskripsi} config={joditConfig} onBlur={(c) => setFormInternasional({...formInternasional, deskripsi: c})} /></div><div className="flex justify-between items-center mt-8 mb-4 border-b border-gray-200 pb-3"><label className="text-sm font-bold text-gray-800 uppercase">Informasi Tambahan</label><button type="button" onClick={() => handleAddInfo(setFormInternasional, formInternasional)} className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-xs font-bold flex gap-2 outline-none"><Plus size={16}/> Tambah Info</button></div>{(formInternasional.informasiTambahan || []).map((info, index) => (<div key={index} className="border border-gray-200 rounded-2xl p-5 mb-5 bg-white shadow-sm relative"><button type="button" onClick={() => handleRemoveInfo(setFormInternasional, formInternasional, index)} className="absolute top-5 right-5 text-red-400 hover:text-red-600 transition outline-none"><Trash2 size={18}/></button><input type="text" value={info.judul} onChange={(e) => handleUpdateInfo(setFormInternasional, formInternasional, index, 'judul', e.target.value)} className="border border-gray-200 p-3 rounded-xl w-full mb-4 outline-none font-semibold text-sm" placeholder="Contoh Judul: Harga Visa..." /><div className="rounded-xl overflow-hidden border border-gray-200"><JoditEditor value={info.isi} config={{...joditConfig, height: 250}} onBlur={(c) => handleUpdateInfo(setFormInternasional, formInternasional, index, 'isi', c)} /></div></div>))}</div>
                   </div>
                 )}
@@ -1298,7 +1477,7 @@ function AdminDashboard() {
               </form>
             </div>
             
-            <div className="px-8 py-5 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0"><button onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 bg-gray-100 text-gray-600 font-medium rounded-xl transition text-sm outline-none">Batal</button><button form="dataForm" type="submit" disabled={isSubmitting || isUploading} className="px-6 py-2.5 bg-[#1e3a8a] text-white font-medium rounded-xl shadow-md text-sm outline-none">Simpan Data</button></div>
+            <div className="px-6 md:px-8 py-5 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0"><button onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 bg-gray-100 text-gray-600 font-medium rounded-xl transition text-sm outline-none">Batal</button><button form="dataForm" type="submit" disabled={isSubmitting || isUploading} className="px-6 py-2.5 bg-[#1e3a8a] text-white font-medium rounded-xl shadow-md text-sm outline-none">Simpan Data</button></div>
           </div>
         </div>
       )}

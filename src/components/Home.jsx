@@ -354,7 +354,7 @@ function Home() {
             </div>
             <div className="bg-[#1e3a8a]/70 border border-blue-500/30 p-3 md:p-6 rounded-lg md:rounded-xl flex flex-col items-center justify-center shrink-0 backdrop-blur-sm min-w-[90px] md:min-w-[180px]">
               <p className="text-blue-200 text-[8px] md:text-sm font-semibold uppercase tracking-widest mb-0.5 md:mb-1">Mulai Dari</p>
-              <h4 className="text-lg md:text-5xl font-extrabold text-[#f59e0b]">{formatRupiah(config.promoPrice)} <span className="text-[9px] md:text-lg font-bold">/pax</span></h4>
+              <h4 className="text-lg md:text-5xl font-extrabold text-[#f59e0b]">{(config.promoPrice)} <span className="text-[9px] md:text-lg font-bold">Jt-an</span></h4>
             </div>
           </div>
         </div>

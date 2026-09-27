@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 import { Lock, User, Eye, EyeOff, ShieldAlert, ArrowLeft, ShieldCheck } from "lucide-react";
@@ -11,11 +11,39 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [identitas, setIdentitas] = useState(null);
   const navigate = useNavigate();
 
+  // Ambil Data Identitas (Logo & Nama Travel) dari Database
   useEffect(() => {
-    document.title = "Login Pengelola | Enka Imron Mandiri";
+    const fetchIdentitas = async () => {
+      try {
+        const snap = await getDoc(doc(db, "settings", "identitas"));
+        if (snap.exists()) {
+          const data = snap.data();
+          setIdentitas(data);
+          document.title = `Login Admin | ${data.namaBesar || "Enka Imron Mandiri"}`;
+        } else {
+          document.title = "Login Admin | Enka Imron Mandiri";
+        }
+      } catch (err) {
+        console.error("Gagal memuat identitas:", err);
+      }
+    };
+    fetchIdentitas();
   }, []);
+
+  // Menentukan Logo Mana yang Ditampilkan Sesuai Pilihan di Admin
+  const getLoginLogo = () => {
+    if (!identitas) return "";
+    const mode = identitas.loginLogoMode || "logoFooter";
+    if (mode === "tanpaLogo") return "";
+    if (mode === "logoNavbar") return identitas.logoNavbar || identitas.logoFooter || "";
+    return identitas.logoFooter || identitas.logoNavbar || "";
+  };
+
+  const activeLogo = getLoginLogo();
+  const namaTravel = identitas?.namaBesar || "ENKA IMRON MANDIRI";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -23,14 +51,11 @@ function Login() {
     setLoading(true);
 
     try {
-      // 1. Jika input tidak memakai '@', otomatis tambahkan domain internal @enkaimron.id
       const cleanInput = usernameInput.trim().toLowerCase();
       const loginEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@enkaimron.id`;
 
-      // 2. Proses Login ke Firebase Auth
       const userCred = await signInWithEmailAndPassword(auth, loginEmail, password);
 
-      // 3. Cek Status Akun di Tabel users_admin (Apakah Aktif atau Nonaktif)
       const q = query(collection(db, "users_admin"), where("email", "==", userCred.user.email));
       const snap = await getDocs(q);
 
@@ -44,7 +69,6 @@ function Login() {
         }
       }
 
-      // 4. Jika aman & aktif, arahkan ke Dashboard Admin
       navigate("/admin");
     } catch (err) {
       console.error(err);
@@ -62,13 +86,32 @@ function Login() {
 
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative z-10 border border-gray-100">
         
-        {/* Header Login */}
+        {/* Header Login dengan Logo & Nama Travel Dinamis */}
         <div className="bg-gradient-to-br from-[#1e3a8a] to-[#0f172a] p-8 text-center text-white relative">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <ShieldCheck size={34} className="text-[#f59e0b]" />
-          </div>
-          <h1 className="text-2xl font-extrabold tracking-wide">PORTAL ADMIN</h1>
-          <p className="text-blue-200 text-xs mt-1 font-medium">Sistem Manajemen Enka Imron Mandiri</p>
+          {activeLogo ? (
+            <div className={`inline-flex items-center justify-center p-3 rounded-2xl mb-4 shadow-lg border ${
+              identitas?.loginLogoMode === "logoNavbar" 
+                ? "bg-white border-gray-200" 
+                : "bg-white/10 backdrop-blur-md border-white/20"
+            }`}>
+              <img 
+                src={activeLogo} 
+                alt={namaTravel} 
+                className="max-h-14 max-w-[180px] object-contain" 
+              />
+            </div>
+          ) : (
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <ShieldCheck size={34} className="text-[#f59e0b]" />
+            </div>
+          )}
+
+          <p className="text-[11px] font-extrabold text-[#f59e0b] uppercase tracking-widest mb-1">
+            Portal Pengelola Resmi
+          </p>
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-wide uppercase leading-snug">
+            {namaTravel}
+          </h1>
         </div>
 
         {/* Form Login */}

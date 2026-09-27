@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import SharePackage from "./SharePackage";
 import { 
   MapPin, Clock, Users, ArrowLeft, ChevronRight, 
   Plane, Bus, TrainFront, Ship, Car, ChevronDown, ChevronUp, Building,
-  FileImage, ZoomIn, Download, X
+  FileImage, ZoomIn, Download, X, CheckCircle, AlertCircle, Flame
 } from "lucide-react";
+import SharePackage from "./SharePackage";
 
 const getTransportIcon = (jenis) => {
   if (!jenis) return Bus;
@@ -103,7 +103,12 @@ function DetailDomestik() {
   if (loading) return <div className="min-h-screen flex justify-center items-center pt-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#1e3a8a]"></div></div>;
   if (!paket) return <div className="min-h-screen flex flex-col justify-center items-center pt-20"><h2 className="text-2xl font-bold mb-4">Paket Tidak Ditemukan</h2><button onClick={() => navigate(-1)} className="bg-[#1e3a8a] text-white px-6 py-2 rounded-xl">Kembali</button></div>;
 
-  const pesanPaket = `Halo Admin Divisi Domestik Enka Imron Mandiri, saya tertarik dengan paket wisata domestik:\n\n*Nama Paket:* ${paket.title}\n*Destinasi:* ${paket.daerah || "-"}\n*Kategori:* ${paket.tipeTrip || "Open Trip"} (${paket.duration || "-"})\n\nMohon informasi lebih lanjut mengenai jadwal dan ketersediaannya. Terima kasih.`;
+  const isFullBooked = paket.statusKuota === "Full Booked";
+  const isTerbatas = paket.statusKuota === "Terbatas";
+
+  const pesanPaket = isFullBooked
+    ? `Halo Admin Divisi Domestik Enka Imron Mandiri, saya melihat paket *${paket.title}* (${paket.daerah || "-"}) sedang *Full Booked*. Apakah ada jadwal keberangkatan lain yang masih tersedia?`
+    : `Halo Admin Divisi Domestik Enka Imron Mandiri, saya tertarik dengan paket wisata domestik:\n\n*Nama Paket:* ${paket.title}\n*Destinasi:* ${paket.daerah || "-"}\n*Kategori:* ${paket.tipeTrip || "Open Trip"} (${paket.duration || "-"})\n\nMohon informasi lebih lanjut mengenai jadwal dan ketersediaannya. Terima kasih.`;
   const linkWaPaket = `https://wa.me/${waNumber}?text=${encodeURIComponent(pesanPaket)}`;
 
   const pesanCustom = `Halo Admin Divisi Domestik Enka Imron Mandiri, saya sedang melihat paket *${paket.title}* dan ingin berkonsultasi untuk menyesuaikan rute/isi paket ini.`;
@@ -121,7 +126,6 @@ function DetailDomestik() {
           <img src={paket.image} alt={paket.title} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/90 via-[#0f172a]/40 to-transparent"></div>
           
-          {/* Tombol Pojok Kanan Atas: Lihat Brosur / Perbesar Foto */}
           <div className="absolute top-5 right-5 flex gap-2 z-10">
             {paket.flyer && (
               <button 
@@ -148,6 +152,21 @@ function DetailDomestik() {
               {paket.badge && paket.badge !== "Tidak Ada" && (
                 <span className={`text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm ${badgeColors[paket.badge] || paket.badgeColor || 'bg-purple-600'}`}>
                   {paket.badge}
+                </span>
+              )}
+
+              {/* BADGE STATUS KUOTA DI HERO */}
+              {isFullBooked ? (
+                <span className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                  <AlertCircle size={14}/> Full Booked
+                </span>
+              ) : isTerbatas ? (
+                <span className="bg-amber-500 text-black px-4 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider shadow-sm flex items-center gap-1.5 animate-pulse">
+                  <Flame size={14}/> {paket.sisaSeat || "Seat Terbatas"}
+                </span>
+              ) : (
+                <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                  <CheckCircle size={14}/> Kuota Tersedia
                 </span>
               )}
             </div>
@@ -202,7 +221,16 @@ function DetailDomestik() {
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-8 sticky top-28">
-              <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b border-gray-100 pb-4">Ringkasan Paket</h3>
+              <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <h3 className="text-lg font-bold text-[#1e3a8a]">Ringkasan Paket</h3>
+                {isFullBooked ? (
+                  <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">Penuh</span>
+                ) : isTerbatas ? (
+                  <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">{paket.sisaSeat || "Terbatas"}</span>
+                ) : (
+                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">Tersedia</span>
+                )}
+              </div>
               <div className="space-y-5 mb-8">
                 <div className="flex items-start gap-4">
                   <div className="bg-blue-50 p-2.5 rounded-xl text-[#1e3a8a]"><Clock size={20}/></div>
@@ -244,28 +272,36 @@ function DetailDomestik() {
               </div>
               
               <div className="space-y-3">
-             <a href={linkWaPaket} target="_blank" rel="noopener noreferrer" className="w-full bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-yellow-500/30 transition-colors text-sm md:text-base flex items-center justify-center gap-2">
-               Konsultasi via WA <ChevronRight size={18}/>
-             </a>
+                <a 
+                  href={linkWaPaket} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className={`w-full text-white font-bold py-4 rounded-xl shadow-lg transition-colors text-sm md:text-base flex items-center justify-center gap-2 ${
+                    isFullBooked 
+                      ? "bg-slate-700 hover:bg-slate-800 shadow-slate-500/20" 
+                      : "bg-[#f59e0b] hover:bg-yellow-600 shadow-yellow-500/30"
+                  }`}
+                >
+                  {isFullBooked ? "Kuota Penuh • Tanya Jadwal Lain" : "Konsultasi via WA"} <ChevronRight size={18}/>
+                </a>
 
-             {paket.flyer && (
-               <button 
-                 onClick={() => setLightboxImg(paket.flyer)} 
-                 className="w-full bg-blue-50 hover:bg-blue-100 text-[#1e3a8a] border border-blue-200 font-bold py-3.5 rounded-xl transition-colors text-xs md:text-sm flex items-center justify-center gap-2"
-               >
-                 <FileImage size={18} className="text-[#f59e0b]" /> Lihat Brosur / Flyer Paket
-               </button>
-             )}
+                {paket.flyer && (
+                  <button 
+                    onClick={() => setLightboxImg(paket.flyer)} 
+                    className="w-full bg-blue-50 hover:bg-blue-100 text-[#1e3a8a] border border-blue-200 font-bold py-3.5 rounded-xl transition-colors text-xs md:text-sm flex items-center justify-center gap-2"
+                  >
+                    <FileImage size={18} className="text-[#f59e0b]" /> Lihat Brosur / Flyer Paket
+                  </button>
+                )}
 
-             {/* TOMBOL BAGIKAN PAKET */}
-             <SharePackage 
-               title={paket.title} 
-               price={paket.price || paket.hargaOpenTrip || paket.hargaPrivateTrip} 
-               duration={paket.duration} 
-               kategori={`Trip Domestik (${paket.tipeTrip || "Open Trip"})`} 
-               infoTambahan={`Destinasi: ${paket.daerah}`} 
-             />
-           </div>
+                <SharePackage 
+                  title={paket.title} 
+                  price={paket.price || paket.hargaOpenTrip || paket.hargaPrivateTrip} 
+                  duration={paket.duration} 
+                  kategori={`Trip Domestik (${paket.tipeTrip || "Open Trip"})`} 
+                  infoTambahan={`Destinasi: ${paket.daerah}`} 
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -294,7 +330,6 @@ function DetailDomestik() {
 
       </div>
 
-      {/* ================= MODAL POP-UP LIGHTBOX FLYER / FOTO ================= */}
       {lightboxImg && (
         <div 
           onClick={() => setLightboxImg(null)} 
