@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Tent, Clock, Building, Plane, TrainFront } from "lucide-react";
+import { 
+  ArrowLeft, Search, Tent, Clock, Building, Plane, TrainFront,
+  CheckCircle, AlertCircle, Flame
+} from "lucide-react";
 
 function SemuaPaketUmroh() {
   const [paketList, setPaketList] = useState([]);
@@ -11,12 +14,11 @@ function SemuaPaketUmroh() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = "Semua Paket Umroh | Enka Imron Mandiri";
     const fetchPaket = async () => {
       try {
         const snap = await getDocs(collection(db, "paket_umroh"));
         const allPaket = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Urutkan paket (opsional: bisa berdasarkan harga atau tanggal dibuat jika ada)
         setPaketList(allPaket);
       } catch (error) {
         console.error("Gagal mengambil data paket umroh:", error);
@@ -35,7 +37,6 @@ function SemuaPaketUmroh() {
 
   const badgeColors = { "Promo": "bg-red-500", "Reguler": "bg-blue-600", "Premium": "bg-purple-600", "VIP": "bg-[#f59e0b]" };
 
-  // FUNGSI: Mengubah format tanggal (MM/DD/YYYY atau YYYY-MM-DD) menjadi format Indonesia
   const formatTanggalIndo = (tanggalString) => {
     if (!tanggalString) return "";
     const dateObj = new Date(tanggalString);
@@ -45,7 +46,6 @@ function SemuaPaketUmroh() {
     return `${dateObj.getDate()} ${bulanIndo[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
   };
 
-  // Logika Fitur Pencarian
   const filteredPaket = paketList.filter(p => 
     p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
     (p.waktuInfo && p.waktuInfo.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -119,56 +119,81 @@ function SemuaPaketUmroh() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredPaket.map((pkg) => (
-              <Link to={`/paket/umroh/${pkg.id}`} key={pkg.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col group cursor-pointer w-full">
-                
-                <div className="relative h-48 overflow-hidden">
-                  <img src={pkg.image || "https://images.unsplash.com/photo-1565552643982-b5e13d9646b9?q=80&w=800"} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70"></div>
+            {filteredPaket.map((pkg) => {
+              const showKuota = pkg.tampilKuota !== "tidak";
+              const isFullBooked = showKuota && pkg.statusKuota === "Full Booked";
+              const isTerbatas = showKuota && pkg.statusKuota === "Terbatas";
+
+              return (
+                <Link to={`/paket/umroh/${pkg.id}`} key={pkg.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col group cursor-pointer w-full">
                   
-                  {/* Badge */}
-                  {pkg.badge && pkg.badge !== "Tidak Ada" && pkg.badge.trim() !== "" && (
-                    <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-md ${badgeColors[pkg.badge] || pkg.badgeColor || 'bg-blue-600'}`}>
-                      {pkg.badge}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="p-5 flex-1 flex flex-col">
-                  {/* Tanggal terformat */}
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-[#f59e0b] mb-1.5 uppercase tracking-wide">
-                    {pkg.tipeWaktu === 'bulan' ? `Bulan ${pkg.waktuInfo}` : formatTanggalIndo(pkg.waktuInfo)}
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-gray-800 mb-4 line-clamp-2 group-hover:text-[#1e3a8a] transition-colors leading-snug">{pkg.title}</h3>
-                  
-                  {/* Informasi Paket (2 Kolom) */}
-                  <div className="grid grid-cols-2 gap-y-2.5 gap-x-3 mb-5 border-b border-gray-100 pb-5 text-[11px] md:text-xs text-gray-600 font-semibold">
-                    <div className="flex items-center gap-1.5"><Clock size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">{pkg.duration || "9 Hari"}</span></div>
-                    {pkg.maskapai && (
-                      <div className="flex items-center gap-1.5"><Plane size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">{pkg.maskapai}</span></div>
-                    )}
-                    <div className="flex items-center gap-1.5"><Building size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">Mekah: ⭐{pkg.bintangMekah || 5}</span></div>
-                    <div className="flex items-center gap-1.5"><Building size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">Madinah: ⭐{pkg.bintangMadinah || 5}</span></div>
+                  <div className="relative h-48 overflow-hidden">
+                    <img src={pkg.image || "https://images.unsplash.com/photo-1565552643982-b5e13d9646b9?q=80&w=800"} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70"></div>
                     
-                    {pkg.keretaCepat === "ya" && (
-                      <div className="flex items-center gap-1.5 col-span-2 mt-1"><TrainFront size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">Kereta Cepat Haramain</span></div>
+                    {/* Badge Kategori (Kiri Atas) */}
+                    {pkg.badge && pkg.badge !== "Tidak Ada" && pkg.badge.trim() !== "" && (
+                      <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-md ${badgeColors[pkg.badge] || pkg.badgeColor || 'bg-blue-600'}`}>
+                        {pkg.badge}
+                      </div>
+                    )}
+
+                    {/* Label Status Kuota (Kanan Atas - Jika Diaktifkan) */}
+                    {showKuota && (
+                      <div className="absolute top-4 right-4">
+                        {isFullBooked ? (
+                          <span className="bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-1.5 rounded-md shadow-md uppercase tracking-wider flex items-center gap-1">
+                            <AlertCircle size={12} /> Full Booked
+                          </span>
+                        ) : isTerbatas ? (
+                          <span className="bg-amber-500 text-black text-[10px] font-extrabold px-2.5 py-1.5 rounded-md shadow-md uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                            <Flame size={12} /> {pkg.sisaSeat || "Terbatas"}
+                          </span>
+                        ) : (
+                          <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1.5 rounded-md shadow-md uppercase tracking-wider flex items-center gap-1">
+                            <CheckCircle size={12} /> Tersedia
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                   
-                  <div className="flex flex-col mt-auto">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Mulai dari</span>
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <p className="text-xl font-extrabold text-[#1e3a8a]">{formatRupiah(pkg.price)}</p>
-                      <span className="text-gray-500 text-xs font-semibold">/pax</span>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-[#f59e0b] mb-1.5 uppercase tracking-wide">
+                      {pkg.tipeWaktu === 'bulan' ? `Bulan ${pkg.waktuInfo}` : formatTanggalIndo(pkg.waktuInfo)}
                     </div>
-                    <div className="w-full text-center bg-[#f59e0b] group-hover:bg-yellow-600 text-white py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm">
-                      Lihat Detail
+                    
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 line-clamp-2 group-hover:text-[#1e3a8a] transition-colors leading-snug">{pkg.title}</h3>
+                    
+                    <div className="grid grid-cols-2 gap-y-2.5 gap-x-3 mb-5 border-b border-gray-100 pb-5 text-[11px] md:text-xs text-gray-600 font-semibold">
+                      <div className="flex items-center gap-1.5"><Clock size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">{pkg.duration || "9 Hari"}</span></div>
+                      {pkg.maskapai && (
+                        <div className="flex items-center gap-1.5"><Plane size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">{pkg.maskapai}</span></div>
+                      )}
+                      <div className="flex items-center gap-1.5"><Building size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">Mekah: ⭐{pkg.bintangMekah || 5}</span></div>
+                      <div className="flex items-center gap-1.5"><Building size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">Madinah: ⭐{pkg.bintangMadinah || 5}</span></div>
+                      
+                      {pkg.keretaCepat === "ya" && (
+                        <div className="flex items-center gap-1.5 col-span-2 mt-1"><TrainFront size={14} className="text-[#1e3a8a] shrink-0" /> <span className="line-clamp-1">Kereta Cepat Haramain</span></div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col mt-auto">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Mulai dari</span>
+                      <div className="flex items-baseline gap-1 mb-4">
+                        <p className="text-xl font-extrabold text-[#1e3a8a]">{formatRupiah(pkg.price)}</p>
+                        <span className="text-gray-500 text-xs font-semibold">/pax</span>
+                      </div>
+                      <div className={`w-full text-center text-white py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${
+                        isFullBooked ? "bg-slate-600 group-hover:bg-slate-700" : "bg-[#f59e0b] group-hover:bg-yellow-600"
+                      }`}>
+                        {isFullBooked ? "Full Booked • Lihat Detail" : "Lihat Detail"}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { MapPin, Phone, Mail, MessageCircle, Globe } from "lucide-react";
+import { MapPin, Phone, Mail, Globe } from "lucide-react";
 
 // KOMPONEN IKON SOSIAL MEDIA (Custom SVG Tahan Banting, termasuk TikTok)
 const Facebook = ({ size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>);
@@ -15,18 +15,10 @@ const Tiktok = ({ size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width
 const SocialIcons = { Facebook, Instagram, Twitter, Youtube, Linkedin, Tiktok };
 const ContactIcons = { Alamat: MapPin, Telepon: Phone, Email: Mail };
 
-const formatWaNumber = (num) => {
-  if (!num) return "";
-  let clean = num.toString().replace(/\D/g, "");
-  if (clean.startsWith("0")) clean = "62" + clean.slice(1);
-  return clean;
-};
-
 function Footer() {
   const [footerData, setFooterData] = useState(null);
   const [identitas, setIdentitas] = useState(null);
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -53,36 +45,12 @@ function Footer() {
 
   if (loading) return <footer className="bg-[#1e3a8a] text-white pt-10 pb-8 min-h-[300px] flex items-center justify-center"><div className="animate-pulse">Memuat informasi...</div></footer>;
 
-  // Logika Pintar: Menyesuaikan Nomor WA Berdasarkan Halaman yang Sedang Dibuka
-  const getActiveWaLink = () => {
-    const path = location.pathname;
-    const mainWa = formatWaNumber(identitas?.noWa) || "6281234567890";
-    let targetWa = mainWa;
-    let divisiText = "layanan paket perjalanan";
-
-    if (path.includes("umroh")) {
-      targetWa = formatWaNumber(identitas?.noWaUmroh) || mainWa;
-      divisiText = "program perjalanan Ibadah Umroh";
-    } else if (path.includes("domestik")) {
-      targetWa = formatWaNumber(identitas?.noWaDomestik) || mainWa;
-      divisiText = "paket wisata Domestik";
-    } else if (path.includes("internasional")) {
-      targetWa = formatWaNumber(identitas?.noWaInternasional) || mainWa;
-      divisiText = "paket wisata Internasional";
-    }
-
-    const msg = `Halo Admin ${identitas?.namaBesar || "Enka Imron Mandiri"}, saya ingin berkonsultasi mengenai ${divisiText} Anda.`;
-    return `https://wa.me/${targetWa}?text=${encodeURIComponent(msg)}`;
-  };
-
-  const activeWaLink = getActiveWaLink();
-
   return (
     <footer className="bg-[#1e3a8a] text-white pt-12 md:pt-16 pb-8 border-t-[6px] border-[#f59e0b]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         
         {/* ===================== TAMPILAN SMARTPHONE (MOBILE) ===================== */}
-        <div className="md:hidden flex flex-col items-center text-center space-y-6 mb-8 border-b border-white/10 pb-8">
+        <div className="md:hidden flex flex-col items-center text-center space-y-5 mb-6 border-b border-white/10 pb-7">
           
           {/* Logo & Nama Sejajar untuk Mobile */}
           <div className="flex items-center justify-center gap-3 text-left">
@@ -100,18 +68,13 @@ function Footer() {
           <p className="text-blue-200 text-sm leading-relaxed max-w-[280px] whitespace-pre-wrap">{footerData.desc}</p>
 
           {footerData.socials && footerData.socials.length > 0 && (
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center pt-1">
               {footerData.socials.map((soc, idx) => {
                 const IconComp = SocialIcons[soc.platform] || Globe;
                 return (<a key={idx} href={soc.link} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#f59e0b] hover:scale-110 transition-all"><IconComp size={18} /></a>);
               })}
             </div>
           )}
-          
-          {/* TOMBOL WA MOBILE DINAMIS */}
-          <a href={activeWaLink} target="_blank" rel="noopener noreferrer" className="w-full max-w-[280px] bg-[#f59e0b] hover:bg-yellow-500 text-black font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-colors">
-            <MessageCircle size={18} /> Hubungi Kami
-          </a>
         </div>
 
         {/* ===================== TAMPILAN LAPTOP/DESKTOP ===================== */}

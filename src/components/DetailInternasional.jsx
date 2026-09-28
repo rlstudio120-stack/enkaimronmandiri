@@ -8,6 +8,7 @@ import {
   FileImage, ZoomIn, Download, X, CheckCircle, AlertCircle, Flame
 } from "lucide-react";
 import SharePackage from "./SharePackage";
+import RelatedPackages from "./RelatedPackages";
 
 const getTransportIcon = (jenis) => {
   if (!jenis) return Plane;
@@ -94,8 +95,9 @@ function DetailInternasional() {
   if (loading) return <div className="min-h-screen flex justify-center items-center pt-20"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#1e3a8a]"></div></div>;
   if (!paket) return <div className="min-h-screen flex flex-col justify-center items-center pt-20"><h2 className="text-2xl font-bold mb-4">Paket Tidak Ditemukan</h2><button onClick={() => navigate(-1)} className="bg-[#1e3a8a] text-white px-6 py-2 rounded-xl">Kembali</button></div>;
 
-  const isFullBooked = paket.statusKuota === "Full Booked";
-  const isTerbatas = paket.statusKuota === "Terbatas";
+  const showKuota = paket.tampilKuota !== "tidak";
+  const isFullBooked = showKuota && paket.statusKuota === "Full Booked";
+  const isTerbatas = showKuota && paket.statusKuota === "Terbatas";
 
   const pesanPaket = isFullBooked
     ? `Halo Admin Divisi Internasional Enka Imron Mandiri, saya melihat paket *${paket.title}* (${paket.negara || paket.daerah || "-"}) sedang *Full Booked*. Apakah ada jadwal keberangkatan lain yang masih tersedia?`
@@ -144,18 +146,20 @@ function DetailInternasional() {
               )}
 
               {/* BADGE STATUS KUOTA DI HERO */}
-              {isFullBooked ? (
-                <span className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
-                  <AlertCircle size={14}/> Full Booked
-                </span>
-              ) : isTerbatas ? (
-                <span className="bg-amber-500 text-black px-4 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider shadow-sm flex items-center gap-1.5 animate-pulse">
-                  <Flame size={14}/> {paket.sisaSeat || "Seat Terbatas"}
-                </span>
-              ) : (
-                <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
-                  <CheckCircle size={14}/> Kuota Tersedia
-                </span>
+              {showKuota && (
+                isFullBooked ? (
+                  <span className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                    <AlertCircle size={14}/> Full Booked
+                  </span>
+                ) : isTerbatas ? (
+                  <span className="bg-amber-500 text-black px-4 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider shadow-sm flex items-center gap-1.5 animate-pulse">
+                    <Flame size={14}/> {paket.sisaSeat || "Seat Terbatas"}
+                  </span>
+                ) : (
+                  <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                    <CheckCircle size={14}/> Kuota Tersedia
+                  </span>
+                )
               )}
             </div>
             <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight drop-shadow-lg">{paket.title}</h1>
@@ -207,12 +211,14 @@ function DetailInternasional() {
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-8 sticky top-28">
               <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-bold text-[#1e3a8a]">Ringkasan Paket</h3>
-                {isFullBooked ? (
-                  <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">Penuh</span>
-                ) : isTerbatas ? (
-                  <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">{paket.sisaSeat || "Terbatas"}</span>
-                ) : (
-                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">Tersedia</span>
+                {showKuota && (
+                  isFullBooked ? (
+                    <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">Penuh</span>
+                  ) : isTerbatas ? (
+                    <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">{paket.sisaSeat || "Terbatas"}</span>
+                  ) : (
+                    <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase">Tersedia</span>
+                  )
                 )}
               </div>
               <div className="space-y-5 mb-8">
@@ -289,6 +295,9 @@ function DetailInternasional() {
             </div>
           </div>
         </div>
+
+        {/* REKOMENDASI PAKET INTERNASIONAL LAINNYA */}
+        <RelatedPackages currentId={paket.id} division="internasional" currentArea={paket.negara || paket.daerah} />
 
         <div className="mt-16 md:mt-24">
           <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[200px] md:min-h-[250px] flex items-center ${config?.ctaBgColor || 'bg-[#1e3a8a]'}`}>

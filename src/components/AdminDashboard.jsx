@@ -77,9 +77,9 @@ function AdminDashboard() {
   }, []);
 
   // ================= TEMPLATE DATA & CONFIGURATIONS =================
-  const initialUmroh = { title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", keretaCepat: "tidak", tampilBadge: "ya", badge: "Tidak Ada", badgeColor: "", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
-  const initialDomestik = { title: "", daerah: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Bus", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
-  const initialInternasional = { title: "", negara: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Pesawat", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
+  const initialUmroh = { title: "", price: "", tipeWaktu: "bulan", waktuInfo: "", duration: "", maskapai: "", pakaiNamaHotel: "ya", hotelMekah: "", bintangMekah: "5", hotelMadinah: "", bintangMadinah: "5", keretaCepat: "tidak", tampilBadge: "ya", badge: "Tidak Ada", badgeColor: "", tampilKuota: "ya", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
+  const initialDomestik = { title: "", daerah: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Bus", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", tampilKuota: "ya", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
+  const initialInternasional = { title: "", negara: "", duration: "", hotel: "", tipeTrip: "Open Trip", price: "", hargaPrivate: [{ nominal: "", deskripsi: "" }], transportasi: [{ jenis: "Pesawat", deskripsi: "" }], badge: "Tidak Ada", badgeColor: "", tampilKuota: "ya", statusKuota: "Tersedia", sisaSeat: "", image: "", flyer: "", deskripsi: "", informasiTambahan: [] };
   const initialDaerah = { title: "", image: "", status: "Aktif" };
   const initialDaerahInt = { title: "", image: "", status: "Aktif" }; 
   const initialBerita = { title: "", date: "", image: "", text: "", category: "Berita", tipe: "Umroh" }; 
@@ -1136,13 +1136,19 @@ function AdminDashboard() {
                               
                               {/* LABEL STATUS KUOTA DI TABEL ADMIN */}
                               {(activeTab === 'umroh' || activeTab === 'domestik' || activeTab === 'internasional') && (
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                  item.statusKuota === 'Full Booked' ? 'bg-red-100 text-red-600' :
-                                  item.statusKuota === 'Terbatas' ? 'bg-amber-100 text-amber-700' :
-                                  'bg-emerald-100 text-emerald-700'
-                                }`}>
-                                  {item.statusKuota === 'Terbatas' ? (item.sisaSeat || 'Seat Terbatas') : (item.statusKuota || 'Tersedia')}
-                                </span>
+                                item.tampilKuota === 'tidak' ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-400">
+                                    Kuota: Nonaktif
+                                  </span>
+                                ) : (
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                    item.statusKuota === 'Full Booked' ? 'bg-red-100 text-red-600' :
+                                    item.statusKuota === 'Terbatas' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-emerald-100 text-emerald-700'
+                                  }`}>
+                                    {item.statusKuota === 'Terbatas' ? (item.sisaSeat || 'Seat Terbatas') : (item.statusKuota || 'Tersedia')}
+                                  </span>
+                                )
                               )}
                             </div>
                             <div className="text-xs text-gray-500 line-clamp-1">
@@ -1266,23 +1272,34 @@ function AdminDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5"><div className="flex flex-col"><label className={labelClass}>Nama Paket</label><input type="text" name="title" value={formUmroh.title} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} required /></div><div className="flex flex-col"><label className={labelClass}>Harga (Rp)</label><input type="text" value={formatInputNumber(formUmroh.price)} onChange={(e) => handleNumberChange(e, setFormUmroh, formUmroh, 'price')} className={inputClass} required /></div></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"><div className="flex flex-col"><label className={labelClass}>Format Waktu</label><select name="tipeWaktu" value={formUmroh.tipeWaktu} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="bulan">Bulan Saja</option><option value="tanggal">Tanggal Pasti</option></select></div><div className="flex flex-col"><label className={labelClass}>Isi Waktu</label><input type={formUmroh.tipeWaktu==='bulan'?'text':'date'} name="waktuInfo" value={formUmroh.waktuInfo} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} /></div><div className="flex flex-col"><label className={labelClass}>Durasi</label><input type="text" name="duration" value={formUmroh.duration} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} /></div><div className="flex flex-col"><label className={labelClass}>Maskapai</label><input type="text" name="maskapai" value={formUmroh.maskapai} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass} /></div></div>
                     <div className="bg-white p-5 rounded-2xl border border-blue-100 flex flex-col gap-5 shadow-sm"><div className="flex items-center gap-4 border-b border-gray-100 pb-3"><label className="text-sm font-bold text-blue-900">Tampilkan Nama Hotel Spesifik?</label><select name="pakaiNamaHotel" value={formUmroh.pakaiNamaHotel} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className="border border-gray-200 py-1.5 px-3 rounded-lg bg-slate-50 text-sm focus:outline-none"><option value="ya">Ya, Tampilkan</option><option value="tidak">Sembunyikan</option></select></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="flex flex-col"><label className={labelClass}>Nama Hotel Mekah</label><input type="text" name="hotelMekah" value={formUmroh.hotelMekah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} disabled={formUmroh.pakaiNamaHotel === 'tidak'} className={`w-full border p-3 rounded-xl text-sm focus:outline-none transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100' : 'bg-slate-50'}`}/></div><div className="flex flex-col"><label className={labelClass}>Bintang Mekah</label><select name="bintangMekah" value={formUmroh.bintangMekah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select></div><div className="flex flex-col"><label className={labelClass}>Nama Hotel Madinah</label><input type="text" name="hotelMadinah" value={formUmroh.hotelMadinah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} disabled={formUmroh.pakaiNamaHotel === 'tidak'} className={`w-full border p-3 rounded-xl text-sm focus:outline-none transition ${formUmroh.pakaiNamaHotel === 'tidak' ? 'bg-gray-100' : 'bg-slate-50'}`}/></div><div className="flex flex-col"><label className={labelClass}>Bintang Madinah</label><select name="bintangMadinah" value={formUmroh.bintangMadinah} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select></div></div><div className="border-t border-gray-100 pt-4"><label className={labelClass}>Kereta Cepat Haramain?</label><select name="keretaCepat" value={formUmroh.keretaCepat} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="tidak">Tidak Tersedia</option><option value="ya">Ya, Termasuk Kereta Cepat</option></select></div></div>
-                    {/* PENGATURAN STATUS KUOTA UMROH */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                        <div className="flex flex-col">
-                          <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
-                          <select name="statusKuota" value={formUmroh.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}>
-                            <option value="Tersedia">Kuota Tersedia (Hijau)</option>
-                            <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
-                            <option value="Full Booked">Full Booked / Penuh (Merah)</option>
-                          </select>
-                        </div>
-                        {formUmroh.statusKuota === "Terbatas" && (
-                          <div className="flex flex-col">
-                            <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
-                            <input type="text" name="sisaSeat" value={formUmroh.sisaSeat || ""} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} placeholder="Contoh: Sisa 4 Seat" className={inputClass} />
-                          </div>
-                        )}
+                    {/* PENGATURAN STATUS KUOTA UMROH (BISA DIAKTIFKAN / DINONAKTIFKAN) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                      <div className="flex flex-col">
+                        <label className={`${labelClass} text-emerald-800`}>Tampilkan Label Kuota?</label>
+                        <select name="tampilKuota" value={formUmroh.tampilKuota || "ya"} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}>
+                          <option value="ya">Ya, Aktifkan di Website</option>
+                          <option value="tidak">Nonaktifkan (Sembunyikan)</option>
+                        </select>
                       </div>
+                      {formUmroh.tampilKuota !== "tidak" && (
+                        <>
+                          <div className="flex flex-col">
+                            <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
+                            <select name="statusKuota" value={formUmroh.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} className={inputClass}>
+                              <option value="Tersedia">Kuota Tersedia (Hijau)</option>
+                              <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
+                              <option value="Full Booked">Full Booked / Penuh (Merah)</option>
+                            </select>
+                          </div>
+                          {formUmroh.statusKuota === "Terbatas" && (
+                            <div className="flex flex-col">
+                              <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
+                              <input type="text" name="sisaSeat" value={formUmroh.sisaSeat || ""} onChange={(e) => handleChange(e, setFormUmroh, formUmroh)} placeholder="Contoh: Sisa 4 Seat" className={inputClass} />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formUmroh.badge} onChange={(e) => handleBadgeChange(e, setFormUmroh, formUmroh)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div>
                       <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover (Landscape)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div>
@@ -1317,23 +1334,34 @@ function AdminDashboard() {
                         ))}
                       </div>
                     </div>
-                    {/* PENGATURAN STATUS KUOTA DOMESTIK */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                        <div className="flex flex-col">
-                          <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
-                          <select name="statusKuota" value={formDomestik.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormDomestik, formDomestik)} className={inputClass}>
-                            <option value="Tersedia">Kuota Tersedia (Hijau)</option>
-                            <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
-                            <option value="Full Booked">Full Booked / Penuh (Merah)</option>
-                          </select>
-                        </div>
-                        {formDomestik.statusKuota === "Terbatas" && (
-                          <div className="flex flex-col">
-                            <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
-                            <input type="text" name="sisaSeat" value={formDomestik.sisaSeat || ""} onChange={(e) => handleChange(e, setFormDomestik, formDomestik)} placeholder="Contoh: Sisa 5 Seat" className={inputClass} />
-                          </div>
-                        )}
+                    {/* PENGATURAN STATUS KUOTA DOMESTIK (BISA DIAKTIFKAN / DINONAKTIFKAN) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                      <div className="flex flex-col">
+                        <label className={`${labelClass} text-emerald-800`}>Tampilkan Label Kuota?</label>
+                        <select name="tampilKuota" value={formDomestik.tampilKuota || "ya"} onChange={(e) => handleChange(e, setFormDomestik, formDomestik)} className={inputClass}>
+                          <option value="ya">Ya, Aktifkan di Website</option>
+                          <option value="tidak">Nonaktifkan (Sembunyikan)</option>
+                        </select>
                       </div>
+                      {formDomestik.tampilKuota !== "tidak" && (
+                        <>
+                          <div className="flex flex-col">
+                            <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
+                            <select name="statusKuota" value={formDomestik.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormDomestik, formDomestik)} className={inputClass}>
+                              <option value="Tersedia">Kuota Tersedia (Hijau)</option>
+                              <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
+                              <option value="Full Booked">Full Booked / Penuh (Merah)</option>
+                            </select>
+                          </div>
+                          {formDomestik.statusKuota === "Terbatas" && (
+                            <div className="flex flex-col">
+                              <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
+                              <input type="text" name="sisaSeat" value={formDomestik.sisaSeat || ""} onChange={(e) => handleChange(e, setFormDomestik, formDomestik)} placeholder="Contoh: Sisa 5 Seat" className={inputClass} />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formDomestik.badge} onChange={(e) => handleBadgeChange(e, setFormDomestik, formDomestik)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div>
                       <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover (Landscape)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div>
@@ -1368,23 +1396,34 @@ function AdminDashboard() {
                         ))}
                       </div>
                     </div>
-                    {/* PENGATURAN STATUS KUOTA INTERNASIONAL */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                        <div className="flex flex-col">
-                          <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
-                          <select name="statusKuota" value={formInternasional.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormInternasional, formInternasional)} className={inputClass}>
-                            <option value="Tersedia">Kuota Tersedia (Hijau)</option>
-                            <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
-                            <option value="Full Booked">Full Booked / Penuh (Merah)</option>
-                          </select>
-                        </div>
-                        {formInternasional.statusKuota === "Terbatas" && (
-                          <div className="flex flex-col">
-                            <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
-                            <input type="text" name="sisaSeat" value={formInternasional.sisaSeat || ""} onChange={(e) => handleChange(e, setFormInternasional, formInternasional)} placeholder="Contoh: Sisa 3 Seat" className={inputClass} />
-                          </div>
-                        )}
+                    {/* PENGATURAN STATUS KUOTA INTERNASIONAL (BISA DIAKTIFKAN / DINONAKTIFKAN) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                      <div className="flex flex-col">
+                        <label className={`${labelClass} text-emerald-800`}>Tampilkan Label Kuota?</label>
+                        <select name="tampilKuota" value={formInternasional.tampilKuota || "ya"} onChange={(e) => handleChange(e, setFormInternasional, formInternasional)} className={inputClass}>
+                          <option value="ya">Ya, Aktifkan di Website</option>
+                          <option value="tidak">Nonaktifkan (Sembunyikan)</option>
+                        </select>
                       </div>
+                      {formInternasional.tampilKuota !== "tidak" && (
+                        <>
+                          <div className="flex flex-col">
+                            <label className={`${labelClass} text-emerald-800`}>Status Ketersediaan Kuota</label>
+                            <select name="statusKuota" value={formInternasional.statusKuota || "Tersedia"} onChange={(e) => handleChange(e, setFormInternasional, formInternasional)} className={inputClass}>
+                              <option value="Tersedia">Kuota Tersedia (Hijau)</option>
+                              <option value="Terbatas">Seat Terbatas / Hampir Habis (Oranye)</option>
+                              <option value="Full Booked">Full Booked / Penuh (Merah)</option>
+                            </select>
+                          </div>
+                          {formInternasional.statusKuota === "Terbatas" && (
+                            <div className="flex flex-col">
+                              <label className={`${labelClass} text-amber-700`}>Keterangan Sisa Kuota</label>
+                              <input type="text" name="sisaSeat" value={formInternasional.sisaSeat || ""} onChange={(e) => handleChange(e, setFormInternasional, formInternasional)} placeholder="Contoh: Sisa 3 Seat" className={inputClass} />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <div className="flex flex-col"><label className={labelClass}>Pilih Tingkatan Badge</label><select value={formInternasional.badge} onChange={(e) => handleBadgeChange(e, setFormInternasional, formInternasional)} className={inputClass}><option value="Tidak Ada">Tanpa Badge</option><option value="Promo">Promo (Merah)</option><option value="Reguler">Reguler (Biru)</option><option value="Premium">Premium (Ungu)</option><option value="VIP">VIP (Kuning)</option></select></div>
                       <div className="flex flex-col"><label className={labelClass}>Upload Gambar Cover (Landscape)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2 rounded-xl bg-white text-sm outline-none"/></div>

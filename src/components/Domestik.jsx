@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import { 
   MapPin, Clock, Users, Calendar, ChevronRight, 
   Plane, Bus, TrainFront, Ship, Car, Box, Star,
-  ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, CheckCircle, Compass, Search, Building
+  ShieldCheck, Heart, Award, ThumbsUp, Gem, Zap, Smile, CheckCircle, Compass, Search, Building,
+  AlertCircle, Flame
 } from "lucide-react";
 
 const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Plane, Box, Zap, Smile, CheckCircle, Compass };
@@ -42,13 +43,13 @@ function Domestik() {
   const [beritaList, setBeritaList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State untuk Slideshow & Pencarian
   const [paketSlide, setPaketSlide] = useState(0);
   const [beritaSlide, setBeritaSlide] = useState(0);
   const [searchDaerah, setSearchDaerah] = useState("");
   const [searchTipe, setSearchTipe] = useState("");
 
   useEffect(() => {
+    document.title = "Wisata Domestik Nusantara | Enka Imron Mandiri";
     const fetchAllData = async () => {
       try {
         const configSnap = await getDoc(doc(db, "settings", "domestik"));
@@ -91,7 +92,6 @@ function Domestik() {
     }
   };
 
-  // LOGIKA PENCARIAN DOMESTIK
   const displayedPaket = paket.filter(pkg => {
     const textSearch = pkg.daerah + " " + pkg.title;
     const matchDaerah = searchDaerah === "" || textSearch.toLowerCase().includes(searchDaerah.toLowerCase());
@@ -110,86 +110,106 @@ function Domestik() {
     return () => clearInterval(interval);
   }, [paketTampilGrid.length, beritaTampilGrid.length]);
 
-  const renderPaketCard = (item) => (
-    <Link to={`/paket/domestik/${item.id}`} key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col group cursor-pointer w-full h-full">
-      
-      {/* ================= 1. BAGIAN FOTO ================= */}
-      <div className="relative h-48 md:h-56 overflow-hidden">
-        <img src={item.image || "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=800"} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80"></div>
-        
-        {/* POSISI ATAS: Jenis Paket (Badge Promo/Reguler dll) */}
-        {item.badge && item.badge !== "Tidak Ada" && item.badge.trim() !== "" && (
-          <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-sm ${badgeColors[item.badge] || item.badgeColor || 'bg-[#1e3a8a]'}`}>
-            {item.badge}
-          </div>
-        )}
-        
-        {/* POSISI BAWAH: Tipe Trip (Open Trip / Private Trip) */}
-        <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-[#1e3a8a] flex items-center gap-1.5 shadow-sm">
-          <Users size={12}/> {item.tipeTrip || "Open Trip"}
-        </div>
-      </div>
-      
-      {/* ================= 2. BAGIAN KONTEN BAWAH FOTO ================= */}
-      <div className="p-5 flex-1 flex flex-col">
-        
-        {/* URUTAN 1: Daerah */}
-        <div className="flex items-center gap-1 text-[11px] font-bold text-[#f59e0b] mb-1.5 uppercase tracking-wide">
-          <MapPin size={12} /> {item.daerah || "Domestik"}
-        </div>
-        
-        {/* URUTAN 2: Judul */}
-        <h3 className="text-lg font-bold text-gray-800 mb-4 line-clamp-2 group-hover:text-[#1e3a8a] transition-colors leading-snug">
-          {item.title}
-        </h3>
-        
-        {/* URUTAN 3: Ikon-Ikon (Mengisi Kiri-Kanan Otomatis) */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-3 mb-5 border-b border-gray-100 pb-5">
-          {/* Durasi */}
-          <div className="flex items-start gap-1.5 text-xs text-gray-600 font-semibold">
-            <Clock size={14} className="text-[#1e3a8a] shrink-0 mt-0.5" /> 
-            <span className="line-clamp-2">{item.duration || "Durasi Fleksibel"}</span>
-          </div>
-          
-          {/* Transportasi Dinamis (Perbaikan: Hanya Tampilkan Deskripsi User) */}
-          {(item.transportasi || []).map((tr, idx) => {
-            const TransportIcon = getTransportIcon(tr.jenis);
-            return (
-              <div key={`trans-${idx}`} className="flex items-start gap-1.5 text-xs text-gray-600 font-semibold" title={tr.deskripsi || tr.jenis}>
-                <TransportIcon size={14} className="text-[#1e3a8a] shrink-0 mt-0.5" /> 
-                <span className="line-clamp-2">{tr.deskripsi ? tr.deskripsi : tr.jenis}</span>
-              </div>
-            );
-          })}
+  const renderPaketCard = (item) => {
+    const showKuota = item.tampilKuota !== "tidak";
+    const isFullBooked = showKuota && item.statusKuota === "Full Booked";
+    const isTerbatas = showKuota && item.statusKuota === "Terbatas";
 
-          {/* Hotel (Tampil jika admin mengisinya) */}
-          {item.hotel && (
-            <div className="flex items-start gap-1.5 text-xs text-gray-600 font-semibold">
-              <Building size={14} className="text-[#1e3a8a] shrink-0 mt-0.5" /> 
-              <span className="line-clamp-2">{item.hotel}</span>
+    return (
+      <Link to={`/paket/domestik/${item.id}`} key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col group cursor-pointer w-full h-full">
+        
+        {/* ================= 1. BAGIAN FOTO ================= */}
+        <div className="relative h-48 md:h-56 overflow-hidden">
+          <img src={item.image || "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?q=80&w=800"} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80"></div>
+          
+          {/* POSISI KIRI ATAS: Jenis Paket (Badge Promo/Reguler dll) */}
+          {item.badge && item.badge !== "Tidak Ada" && item.badge.trim() !== "" && (
+            <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-sm ${badgeColors[item.badge] || item.badgeColor || 'bg-[#1e3a8a]'}`}>
+              {item.badge}
             </div>
           )}
+
+          {/* POSISI KANAN ATAS: Label Status Kuota (Jika Diaktifkan) */}
+          {showKuota && (
+            <div className="absolute top-4 right-4">
+              {isFullBooked ? (
+                <span className="bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-1.5 rounded-md shadow-md uppercase tracking-wider flex items-center gap-1">
+                  <AlertCircle size={12} /> Full Booked
+                </span>
+              ) : isTerbatas ? (
+                <span className="bg-amber-500 text-black text-[10px] font-extrabold px-2.5 py-1.5 rounded-md shadow-md uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                  <Flame size={12} /> {item.sisaSeat || "Terbatas"}
+                </span>
+              ) : (
+                <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1.5 rounded-md shadow-md uppercase tracking-wider flex items-center gap-1">
+                  <CheckCircle size={12} /> Tersedia
+                </span>
+              )}
+            </div>
+          )}
+          
+          {/* POSISI BAWAH: Tipe Trip (Open Trip / Private Trip) */}
+          <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-[#1e3a8a] flex items-center gap-1.5 shadow-sm">
+            <Users size={12}/> {item.tipeTrip || "Open Trip"}
+          </div>
         </div>
         
-        {/* URUTAN 4 & 5: Harga dan Tombol Aksi */}
-        <div className="flex flex-col mt-auto">
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Mulai Dari</p>
-          <div className="flex items-baseline gap-1 mb-4">
-            <p className="text-xl font-extrabold text-[#1e3a8a]">
-              {formatRupiah(item.price || item.hargaOpenTrip || item.hargaPrivateTrip)}
-            </p>
-            <span className="text-gray-500 text-xs font-semibold">/pax</span>
+        {/* ================= 2. BAGIAN KONTEN BAWAH FOTO ================= */}
+        <div className="p-5 flex-1 flex flex-col">
+          
+          <div className="flex items-center gap-1 text-[11px] font-bold text-[#f59e0b] mb-1.5 uppercase tracking-wide">
+            <MapPin size={12} /> {item.daerah || "Domestik"}
           </div>
           
-          <div className="w-full text-center bg-[#f59e0b] group-hover:bg-yellow-600 text-white py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm">
-            Lihat Detail
-          </div>
-        </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-4 line-clamp-2 group-hover:text-[#1e3a8a] transition-colors leading-snug">
+            {item.title}
+          </h3>
+          
+          <div className="grid grid-cols-2 gap-x-3 gap-y-3 mb-5 border-b border-gray-100 pb-5">
+            <div className="flex items-start gap-1.5 text-xs text-gray-600 font-semibold">
+              <Clock size={14} className="text-[#1e3a8a] shrink-0 mt-0.5" /> 
+              <span className="line-clamp-2">{item.duration || "Durasi Fleksibel"}</span>
+            </div>
+            
+            {(item.transportasi || []).map((tr, idx) => {
+              const TransportIcon = getTransportIcon(tr.jenis);
+              return (
+                <div key={`trans-${idx}`} className="flex items-start gap-1.5 text-xs text-gray-600 font-semibold" title={tr.deskripsi || tr.jenis}>
+                  <TransportIcon size={14} className="text-[#1e3a8a] shrink-0 mt-0.5" /> 
+                  <span className="line-clamp-2">{tr.deskripsi ? tr.deskripsi : tr.jenis}</span>
+                </div>
+              );
+            })}
 
-      </div>
-    </Link>
-  );
+            {item.hotel && (
+              <div className="flex items-start gap-1.5 text-xs text-gray-600 font-semibold">
+                <Building size={14} className="text-[#1e3a8a] shrink-0 mt-0.5" /> 
+                <span className="line-clamp-2">{item.hotel}</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col mt-auto">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Mulai Dari</p>
+            <div className="flex items-baseline gap-1 mb-4">
+              <p className="text-xl font-extrabold text-[#1e3a8a]">
+                {formatRupiah(item.price || item.hargaOpenTrip || item.hargaPrivateTrip)}
+              </p>
+              <span className="text-gray-500 text-xs font-semibold">/pax</span>
+            </div>
+            
+            <div className={`w-full text-center text-white py-2.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${
+              isFullBooked ? "bg-slate-600 group-hover:bg-slate-700" : "bg-[#f59e0b] group-hover:bg-yellow-600"
+            }`}>
+              {isFullBooked ? "Full Booked • Lihat Detail" : "Lihat Detail"}
+            </div>
+          </div>
+
+        </div>
+      </Link>
+    );
+  };
 
   const renderBeritaCard = (item) => (
     <div key={item.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group flex flex-col w-full">
@@ -238,7 +258,6 @@ function Domestik() {
         </div>
       </div>
 
-      {/* KOTAK PENCARIAN BERFUNGSI */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-20 md:-mt-16 mb-16">
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -309,7 +328,6 @@ function Domestik() {
             <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
               <h2 className="text-2xl md:text-3xl font-bold text-[#1e3a8a]">Penawaran Paket Terbaru</h2>
               
-              {/* PERBAIKAN LINK SEMUA PAKET */}
               {(paket.length > 4 || displayedPaket.length > 2) && (
                 <Link to="/domestik/paket" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition">
                   Lihat Semua Paket <ChevronRight size={18}/>
@@ -353,7 +371,6 @@ function Domestik() {
               <div className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-[#1e3a8a]">Tips & Inspirasi Liburan</h2>
                 
-                {/* PERBAIKAN LINK SEMUA BERITA */}
                 {beritaList.length > 3 && (
                   <Link to="/berita" className="text-[#1e3a8a] font-semibold hover:text-[#f59e0b] hidden md:flex items-center gap-1 transition">
                     Lihat Semua Berita <ChevronRight size={18}/>

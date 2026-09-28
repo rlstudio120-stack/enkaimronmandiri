@@ -391,7 +391,7 @@ function Home() {
       {/* 6. TESTIMONIALS */}
       <div className="bg-white py-16 md:py-24 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10 md:mb-16"><p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Testimoni</p><h2 className="text-2xl md:text-4xl font-extrabold text-[#1e3a8a]">Apa Kata Jamaah Kami?</h2></div>
+          <div className="text-center mb-10 md:mb-16"><p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Testimoni</p><h2 className="text-2xl md:text-4xl font-extrabold text-[#1e3a8a]">Kesan Mereka Bersama Enka Imron Mandiri</h2></div>
           <div className="relative">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {currentTestimonials.map((testi) => (
