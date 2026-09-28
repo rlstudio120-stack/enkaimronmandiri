@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -8,7 +8,6 @@ import { auth, db } from "./firebase";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./components/Home";
-import AdminDashboard from "./components/AdminDashboard";
 import Login from "./components/Login";
 import NotFound from "./components/NotFound"; // <-- IMPORT HALAMAN 404
 
@@ -35,6 +34,9 @@ import NewsDetail from "./components/NewsDetail";
 import TentangKami from "./components/TentangKami";
 import SyaratKetentuan from "./components/SyaratKetentuan";
 import Faq from "./components/Faq";
+
+// Lazy Load khusus Halaman Admin (Agar pengunjung umum tidak perlu mengunduh beban editor Admin)
+const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 
 // --- WADAH AREA PUBLIK ---
 function PublicLayout() {
@@ -134,7 +136,9 @@ function App() {
           path="/admin" 
           element={
             <ProtectedRoute>
-              <AdminDashboard />
+              <Suspense fallback={<div className="h-screen flex items-center justify-center text-xl font-bold text-[#1e3a8a]">Memuat Panel Admin...</div>}>
+                <AdminDashboard />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
