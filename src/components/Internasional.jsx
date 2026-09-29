@@ -11,6 +11,42 @@ import {
 
 const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Plane, Globe, Box, Zap, Smile, CheckCircle, Compass };
 
+// Fungsi pembaca posisi gambar: memisahkan posisi Laptop (Vertikal) & Smartphone (Horizontal +/-)
+const resolveImagePos = (pos) => {
+  if (!pos && pos !== 0) return "50% 50%";
+  const str = pos.toString().trim();
+  const isMobileView = typeof window !== "undefined" && window.innerWidth < 768;
+
+  // 1. Jika menggunakan format terpisah "offsetHP|posisiLaptop" (contoh: "+25|0%")
+  if (str.includes("|")) {
+    const [rawX, rawY] = str.split("|");
+    const y = (rawY || "50%").trim();
+    let x = "50%";
+    if (/^[+-]?\d+$/.test((rawX || "").trim())) {
+      const offset = parseInt(rawX.trim(), 10);
+      x = `${Math.max(0, Math.min(100, 50 + offset))}%`;
+    }
+    // Di Laptop: Kunci horizontal di tengah (50%) dan ikuti posisi vertikal Laptop (y)
+    // Di Smartphone: Ikuti geseran kiri/kanan (x) dan vertikal (y)
+    return isMobileView ? `${x} ${y}` : `50% ${y}`;
+  }
+
+  // 2. Kompatibilitas nilai lama
+  const map = {
+    "bg-center": "50% 50%", "bg-top": "50% 0%", "bg-bottom": "50% 100%",
+    "object-center": "50% 50%", "object-top": "50% 0%", "object-bottom": "50% 100%"
+  };
+  if (map[str]) return map[str];
+
+  if (/^[+-]?\d+$/.test(str)) {
+    const offset = parseInt(str, 10);
+    const x = Math.max(0, Math.min(100, 50 + offset));
+    return isMobileView ? `${x}% 50%` : "50% 50%";
+  }
+
+  return str;
+};
+
 const getTransportIcon = (jenis) => {
   if (!jenis) return Plane;
   const j = jenis.toLowerCase();
@@ -27,12 +63,14 @@ const defaultInternasionalConfig = {
   heroTitle: "Destinasi Wisata Internasional Terbaik", 
   heroDesc: "Temukan keindahan ragam budaya dan pesona negara-negara di seluruh dunia melalui pilihan trip kami.", 
   heroBg: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000",
+  heroBgPos: "0",
   showBadges: "ya", d1Text: "Pemandu Berpengalaman", d1Icon: "Users", d2Text: "Fasilitas Premium", d2Icon: "Star", d3Text: "Aman & Nyaman", d3Icon: "ShieldCheck",
   ctaTitle: "Punya Negara Impian Sendiri?",
   ctaDesc: "Konsultasikan rute perjalanan ke negara impian Anda dengan tim ahli kami.",
   ctaBtnText: "Konsultasi via WhatsApp",
   ctaBtnLink: "https://wa.me/6281234567890",
-  ctaBgColor: "bg-[#1e3a8a]"
+  ctaBgColor: "bg-[#1e3a8a]",
+  ctaBgPos: "0"
 };
 
 function Internasional() {
@@ -117,20 +155,16 @@ function Internasional() {
 
     return (
       <Link to={`/paket/internasional/${item.id}`} key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col group cursor-pointer w-full h-full">
-        
-        {/* ================= 1. BAGIAN FOTO ================= */}
         <div className="relative h-48 md:h-56 overflow-hidden">
           <img src={item.image || "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800"} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80"></div>
           
-          {/* POSISI KIRI ATAS: Jenis Paket */}
           {item.badge && item.badge !== "Tidak Ada" && item.badge.trim() !== "" && (
             <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-sm ${badgeColors[item.badge] || item.badgeColor || 'bg-[#1e3a8a]'}`}>
               {item.badge}
             </div>
           )}
 
-          {/* POSISI KANAN ATAS: Label Status Kuota (Jika Diaktifkan) */}
           {showKuota && (
             <div className="absolute top-4 right-4">
               {isFullBooked ? (
@@ -149,15 +183,12 @@ function Internasional() {
             </div>
           )}
           
-          {/* POSISI BAWAH: Tipe Trip */}
           <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-[#1e3a8a] flex items-center gap-1.5 shadow-sm">
             <Users size={12}/> {item.tipeTrip || "Open Trip"}
           </div>
         </div>
         
-        {/* ================= 2. BAGIAN KONTEN BAWAH FOTO ================= */}
         <div className="p-5 flex-1 flex flex-col">
-          
           <div className="flex items-center gap-1 text-[11px] font-bold text-[#f59e0b] mb-1.5 uppercase tracking-wide">
             <Globe size={12} /> {item.negara || item.daerah || "Internasional"}
           </div>
@@ -205,7 +236,6 @@ function Internasional() {
               {isFullBooked ? "Full Booked • Lihat Detail" : "Lihat Detail"}
             </div>
           </div>
-
         </div>
       </Link>
     );
@@ -231,8 +261,15 @@ function Internasional() {
   return (
     <div className="pt-20 bg-slate-50 min-h-screen overflow-x-hidden">
       
+      {/* HERO SECTION DENGAN POSISI GAMBAR +/- */}
       <div className="relative bg-[#0f172a] pt-16 pb-32 md:pt-24 md:pb-28">
-        <div className={`absolute inset-0 bg-cover ${config.heroBgPos || 'bg-center'}`} style={{ backgroundImage: `url('${config.heroBg || defaultInternasionalConfig.heroBg}')` }}></div>
+        <div 
+          className="absolute inset-0 bg-cover bg-no-repeat" 
+          style={{ 
+            backgroundImage: `url('${config.heroBg || defaultInternasionalConfig.heroBg}')`,
+            backgroundPosition: resolveImagePos(config.heroBgPos)
+          }}
+        ></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/90 via-[#1e3a8a]/60 to-transparent"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
           {config.heroSmallText && (
@@ -401,13 +438,14 @@ function Internasional() {
             </div>
           )}
 
+          {/* KEUNGGULAN: SEJAJAR 1 BARIS DI PC (HINGGA 5 IKON) & 2 KIRI-KANAN DI HP */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
             <div className="text-center mb-12"><h2 className="text-2xl md:text-3xl font-extrabold text-[#1e3a8a]">Mengapa Liburan<br className="md:hidden"/> Bersama Enka Imron Mandiri?</h2></div>
-            <div className="flex flex-wrap justify-center gap-6 md:gap-10">
+            <div className="flex flex-wrap md:flex-nowrap justify-center gap-x-4 gap-y-8 md:gap-6 max-w-6xl mx-auto">
               {keunggulanList.length > 0 ? keunggulanList.map((fitur) => {
                 const DynamicIcon = IconMap[fitur.icon] || Star;
                 return (
-                  <div key={fitur.id} className="flex flex-col items-center text-center max-w-[180px] group">
+                  <div key={fitur.id} className="w-[calc(50%-8px)] md:w-auto md:flex-1 md:max-w-[220px] flex flex-col items-center text-center group px-1">
                     <div className="w-16 h-16 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center shadow-lg mb-4 group-hover:-translate-y-1 transition-transform"><DynamicIcon size={28} /></div>
                     <h4 className="text-[14px] md:text-base font-bold text-[#1e3a8a] mb-2 leading-tight">{fitur.title}</h4>
                     <p className="text-gray-500 text-[11px] md:text-xs leading-relaxed">{fitur.deskripsi}</p>
@@ -417,9 +455,16 @@ function Internasional() {
             </div>
           </div>
 
+          {/* BANNER CTA DENGAN POSISI GAMBAR +/- */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
             <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[200px] md:min-h-[250px] flex items-center ${config.ctaBgColor || 'bg-[#1e3a8a]'}`}>
-              <div className="absolute inset-0 w-full h-full"><img src={config.ctaBg || "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000"} className={`w-full h-full object-cover ${config.ctaBgPos || 'object-center'}`} /></div>
+              <div className="absolute inset-0 w-full h-full">
+                <img 
+                  src={config.ctaBg || "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000"} 
+                  style={{ objectPosition: resolveImagePos(config.ctaBgPos) }}
+                  className="w-full h-full object-cover" 
+                />
+              </div>
               <div className={`absolute inset-0 bg-gradient-to-r ${getCtaGradient(config.ctaBgColor || 'bg-[#1e3a8a]')}`}></div>
               <div className="relative z-10 w-full md:w-2/3 p-8 md:p-12 text-left">
                 <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4 leading-snug">{config.ctaTitle || "Punya Negara Impian Sendiri?"}</h2>

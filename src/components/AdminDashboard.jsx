@@ -445,7 +445,123 @@ function AdminDashboard() {
   const labelClass = "text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide block";
   const titleSizeOptions = <><option value="text-[28px] md:text-4xl lg:text-5xl">Sedang</option><option value="text-[32px] md:text-5xl lg:text-6xl">Besar (Standar)</option><option value="text-[36px] md:text-6xl lg:text-7xl">Sangat Besar</option></>;
   const smallTextSizeOptions = <><option value="text-[10px] md:text-xs">Kecil</option><option value="text-[10px] md:text-sm">Sedang (Standar)</option><option value="text-xs md:text-base">Besar</option></>;
-  const bgPosOptions = <><option value="bg-top">Fokus Atas</option><option value="bg-center">Fokus Tengah (Standar)</option><option value="bg-bottom">Fokus Bawah (Pemandangan)</option></>;
+// Kontrol Posisi Fokus Gambar Terpisah: Laptop (Atas/Tengah/Bawah) & Smartphone (Geser Kiri/Kanan +/-)
+  const renderImagePosControl = (currentVal, onChangeFn) => {
+    const parsePos = (val) => {
+      if (!val && val !== 0) return { x: "0", y: "50%" };
+      const s = val.toString().trim();
+
+      // Format baru: "offsetHP|posisiLaptop" (contoh: "+20|0%")
+      if (s.includes("|")) {
+        const [rawX, rawY] = s.split("|");
+        return { x: rawX ?? "0", y: rawY || "50%" };
+      }
+
+      // Kompatibilitas nilai lama
+      if (s === "bg-top" || s === "object-top" || s === "50% 0%") return { x: "0", y: "0%" };
+      if (s === "bg-bottom" || s === "object-bottom" || s === "50% 100%") return { x: "0", y: "100%" };
+      if (s === "bg-center" || s === "object-center" || s === "50% 50%") return { x: "0", y: "50%" };
+
+      // Jika nilai lama berupa angka +/- saja
+      if (/^[+-]?\d+$/.test(s)) return { x: s, y: "50%" };
+
+      // Jika nilai lama berupa "70% 0%"
+      const parts = s.split(/\s+/);
+      if (parts.length === 2) {
+        const numX = parseInt(parts[0], 10);
+        const offset = !isNaN(numX) ? numX - 50 : 0;
+        return { x: offset > 0 ? `+${offset}` : `${offset}`, y: parts[1] };
+      }
+
+      return { x: "0", y: "50%" };
+    };
+
+    const { x: xVal, y: yVal } = parsePos(currentVal);
+    const xPresets = ["0", "-15", "-30", "-50", "+15", "+30", "+50"];
+
+    const updateBoth = (newX, newY) => {
+      onChangeFn(`${newX}|${newY}`);
+    };
+
+    const adjustOffset = (delta) => {
+      const currentNum = /^[+-]?\d+$/.test(xVal) ? parseInt(xVal, 10) : 0;
+      const nextNum = Math.max(-50, Math.min(50, currentNum + delta));
+      const formattedX = nextNum > 0 ? `+${nextNum}` : `${nextNum}`;
+      updateBoth(formattedX, yVal);
+    };
+
+    return (
+      <div className="space-y-3 bg-slate-50 p-3 rounded-xl border border-gray-200">
+        {/* 1. PENGATURAN KHUSUS LAPTOP / PC (ATAS - TENGAH - BAWAH) */}
+        <div>
+          <label className="block text-[10px] font-extrabold text-[#1e3a8a] uppercase tracking-wider mb-1">
+            🖥️ Tampilan Laptop/PC (Atas / Tengah / Bawah)
+          </label>
+          <select 
+            value={yVal} 
+            onChange={(e) => updateBoth(xVal, e.target.value)} 
+            className={inputClass}
+          >
+            <option value="0%">Fokus Atas (0%)</option>
+            <option value="25%">Agak ke Atas (25%)</option>
+            <option value="50%">Fokus Tengah - Standar (50%)</option>
+            <option value="75%">Agak ke Bawah (75%)</option>
+            <option value="100%">Fokus Bawah (100%)</option>
+          </select>
+        </div>
+
+        {/* 2. PENGATURAN KHUSUS SMARTPHONE (GESER KIRI / KANAN +/-) */}
+        <div className="pt-2 border-t border-gray-200">
+          <label className="block text-[10px] font-extrabold text-[#f59e0b] uppercase tracking-wider mb-1">
+            📱 Tampilan Smartphone (Geser Kiri / Kanan)
+          </label>
+          <select 
+            value={xPresets.includes(xVal) ? xVal : "custom"} 
+            onChange={(e) => { if (e.target.value !== "custom") updateBoth(e.target.value, yVal); }} 
+            className={`${inputClass} mb-2`}
+          >
+            <option value="0">Tengah Standar (0)</option>
+            <option value="+15">Geser ke Kanan Sedikit (+15)</option>
+            <option value="+30">Geser ke Kanan Banyak (+30)</option>
+            <option value="+50">Mentok Kanan (+50)</option>
+            <option value="-15">Geser ke Kiri Sedikit (-15)</option>
+            <option value="-30">Geser ke Kiri Banyak (-30)</option>
+            <option value="-50">Mentok Kiri (-50)</option>
+            <option value="custom">-- Angka Manual (+/-) --</option>
+          </select>
+
+          <div className="flex items-center gap-2">
+            <button 
+              type="button" 
+              onClick={() => adjustOffset(-5)} 
+              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-gray-800 rounded-lg text-xs font-extrabold transition"
+              title="Geser ke Kiri (-5)"
+            >
+              -5
+            </button>
+            <input 
+              type="text" 
+              value={xVal} 
+              onChange={(e) => updateBoth(e.target.value, yVal)} 
+              placeholder="Misal: -20 atau +30" 
+              className="flex-1 border border-blue-200 px-3 py-2 rounded-lg bg-white focus:border-blue-500 focus:outline-none text-xs font-bold text-center text-[#1e3a8a]"
+            />
+            <button 
+              type="button" 
+              onClick={() => adjustOffset(5)} 
+              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-gray-800 rounded-lg text-xs font-extrabold transition"
+              title="Geser ke Kanan (+5)"
+            >
+              +5
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1 leading-tight">
+            *Geseran <b>+/-</b> di atas hanya mengubah tampilan <b>Smartphone</b> tanpa mengubah posisi Atas/Tengah/Bawah di <b>Laptop</b>.
+          </p>
+        </div>
+      </div>
+    );
+  };
   const bgColorOptions = <><option value="bg-[#0f172a]">Biru Gelap Default</option><option value="bg-[#1e3a8a]">Biru Enka Mandiri</option><option value="bg-[#f59e0b]">Kuning Emas</option><option value="bg-emerald-800">Hijau Tua</option><option value="bg-black">Hitam Pekat</option></>;
   const colorOptions = <><option value="bg-[#1e3a8a]">Biru Tua</option><option value="bg-[#f59e0b]">Kuning Emas</option><option value="bg-emerald-500">Hijau</option><option value="bg-red-500">Merah</option><option value="bg-purple-500">Ungu</option></>;
 
@@ -909,7 +1025,7 @@ function AdminDashboard() {
                   <div><label className={labelClass}>Judul Utama</label><textarea name="heroTitle" value={formConfig.heroTitle} onChange={handleConfigChange} rows="2" className={inputClass}></textarea></div>
                   <div><label className={labelClass}>Deskripsi Singkat</label><textarea name="heroDesc" value={formConfig.heroDesc} onChange={handleConfigChange} rows="2" className={inputClass}></textarea></div>
                   <div><label className={labelClass}>Ukuran Font Judul</label><select name="heroTitleSize" value={formConfig.heroTitleSize} onChange={handleConfigChange} className={inputClass}>{titleSizeOptions}</select></div>
-                  <div><label className={labelClass}>Posisi Fokus Gambar</label><select name="heroBgPos" value={formConfig.heroBgPos} onChange={handleConfigChange} className={inputClass}>{bgPosOptions}</select></div>
+                  <div><label className={labelClass}>Posisi Fokus Gambar Hero</label>{renderImagePosControl(formConfig.heroBgPos, (val) => setFormConfig({...formConfig, heroBgPos: val}))}</div>
                   <div><label className={labelClass}>Background Gambar</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'heroBg', 'home')} className="w-full text-sm border p-2.5 rounded-xl bg-slate-50"/></div>
                   <div><label className={labelClass}>Tampilkan Ikon Info?</label><select name="showBadges" value={formConfig.showBadges} onChange={handleConfigChange} className={inputClass}><option value="ya">Ya, Tampilkan 3 Ikon</option><option value="tidak">Sembunyikan</option></select></div>
                 </div>
@@ -957,6 +1073,7 @@ function AdminDashboard() {
                   </div>
                   <div><label className={labelClass}>Harga Mulai (Angka Besar)</label><input type="text" name="promoPrice" value={formConfig.promoPrice} onChange={handleConfigChange} className={inputClass}/></div>
                   <div><label className={labelClass}>Warna Latar Promo</label><select name="promoBgColor" value={formConfig.promoBgColor} onChange={handleConfigChange} className={inputClass}>{bgColorOptions}</select></div>
+                  <div><label className={labelClass}>Posisi Fokus Gambar Promo</label>{renderImagePosControl(formConfig.promoBgPos, (val) => setFormConfig({...formConfig, promoBgPos: val}))}</div>
                   <div className="md:col-span-2"><label className={labelClass}>Background Gambar Promo</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'promoBg', 'home')} className="w-full text-sm border p-2.5 rounded-xl bg-slate-50"/></div>
                 </div>
               </div>
@@ -975,7 +1092,7 @@ function AdminDashboard() {
                    <div><label className={labelClass}>Judul Utama</label><textarea name="heroTitle" value={formUmrohConfig.heroTitle} onChange={handleUmrohConfigChange} rows="2" className={inputClass}></textarea></div>
                    <div><label className={labelClass}>Deskripsi</label><textarea name="heroDesc" value={formUmrohConfig.heroDesc} onChange={handleUmrohConfigChange} rows="2" className={inputClass}></textarea></div>
                    <div><label className={labelClass}>Ukuran Font Judul</label><select name="heroTitleSize" value={formUmrohConfig.heroTitleSize} onChange={handleUmrohConfigChange} className={inputClass}>{titleSizeOptions}</select></div>
-                   <div><label className={labelClass}>Posisi Fokus Gambar</label><select name="heroBgPos" value={formUmrohConfig.heroBgPos} onChange={handleUmrohConfigChange} className={inputClass}>{bgPosOptions}</select></div>
+                   <div><label className={labelClass}>Posisi Fokus Gambar Hero</label>{renderImagePosControl(formUmrohConfig.heroBgPos, (val) => setFormUmrohConfig({...formUmrohConfig, heroBgPos: val}))}</div>
                    <div className="md:col-span-2"><label className={labelClass}>Background Gambar Hero Umroh</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'heroBg', 'umroh')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50 outline-none"/></div>
                  </div>
                  <div className="mt-8 bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
@@ -996,6 +1113,7 @@ function AdminDashboard() {
                    <div><label className={labelClass}>Teks Tombol Aksi</label><input type="text" name="ctaBtnText" value={formUmrohConfig.ctaBtnText} onChange={handleUmrohConfigChange} className={inputClass}/></div>
                    <div><label className={labelClass}>Link Tombol (URL/WA)</label><input type="text" name="ctaBtnLink" value={formUmrohConfig.ctaBtnLink} onChange={handleUmrohConfigChange} className={inputClass}/></div>
                    <div><label className={labelClass}>Warna Latar CTA</label><select name="ctaBgColor" value={formUmrohConfig.ctaBgColor} onChange={handleUmrohConfigChange} className={inputClass}>{bgColorOptions}</select></div>
+                   <div><label className={labelClass}>Posisi Fokus Gambar CTA</label>{renderImagePosControl(formUmrohConfig.ctaBgPos, (val) => setFormUmrohConfig({...formUmrohConfig, ctaBgPos: val}))}</div>
                    <div className="md:col-span-2"><label className={labelClass}>Background Gambar CTA (Opsional)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'ctaBg', 'umroh')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50"/></div>
                  </div>
                </div>
@@ -1014,7 +1132,7 @@ function AdminDashboard() {
                    <div><label className={labelClass}>Judul Utama Hero</label><textarea name="heroTitle" value={formDomestikConfig.heroTitle} onChange={handleDomestikConfigChange} rows="2" className={inputClass}></textarea></div>
                    <div><label className={labelClass}>Deskripsi</label><textarea name="heroDesc" value={formDomestikConfig.heroDesc} onChange={handleDomestikConfigChange} rows="2" className={inputClass}></textarea></div>
                    <div><label className={labelClass}>Ukuran Font Judul</label><select name="heroTitleSize" value={formDomestikConfig.heroTitleSize} onChange={handleDomestikConfigChange} className={inputClass}>{titleSizeOptions}</select></div>
-                   <div><label className={labelClass}>Posisi Fokus Gambar</label><select name="heroBgPos" value={formDomestikConfig.heroBgPos} onChange={handleDomestikConfigChange} className={inputClass}>{bgPosOptions}</select></div>
+                   <div><label className={labelClass}>Posisi Fokus Gambar Hero</label>{renderImagePosControl(formDomestikConfig.heroBgPos, (val) => setFormDomestikConfig({...formDomestikConfig, heroBgPos: val}))}</div>
                    <div className="md:col-span-2"><label className={labelClass}>Background Gambar Hero Domestik</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'heroBg', 'domestik')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl mb-1 bg-slate-50 outline-none"/></div>
                    <div><label className={labelClass}>Tampilkan 3 Ikon Info?</label><select name="showBadges" value={formDomestikConfig.showBadges} onChange={handleDomestikConfigChange} className={inputClass}><option value="ya">Ya, Tampilkan</option><option value="tidak">Sembunyikan</option></select></div>
                  </div>
@@ -1038,6 +1156,7 @@ function AdminDashboard() {
                    <div><label className={labelClass}>Teks Tombol Hubungi</label><input type="text" name="ctaBtnText" value={formDomestikConfig.ctaBtnText} onChange={handleDomestikConfigChange} className={inputClass}/></div>
                    <div><label className={labelClass}>Nomor WA (Link)</label><input type="text" name="ctaBtnLink" value={formDomestikConfig.ctaBtnLink} onChange={handleDomestikConfigChange} className={inputClass}/></div>
                    <div><label className={labelClass}>Warna Latar CTA</label><select name="ctaBgColor" value={formDomestikConfig.ctaBgColor} onChange={handleDomestikConfigChange} className={inputClass}>{bgColorOptions}</select></div>
+                   <div><label className={labelClass}>Posisi Fokus Gambar CTA</label>{renderImagePosControl(formDomestikConfig.ctaBgPos, (val) => setFormDomestikConfig({...formDomestikConfig, ctaBgPos: val}))}</div>
                    <div className="md:col-span-2"><label className={labelClass}>Background Gambar CTA (Opsional)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'ctaBg', 'domestik')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50"/></div>
                  </div>
                </div>
@@ -1056,7 +1175,7 @@ function AdminDashboard() {
                    <div><label className={labelClass}>Judul Utama Hero</label><textarea name="heroTitle" value={formInternasionalConfig.heroTitle} onChange={handleInternasionalConfigChange} rows="2" className={inputClass}></textarea></div>
                    <div><label className={labelClass}>Deskripsi</label><textarea name="heroDesc" value={formInternasionalConfig.heroDesc} onChange={handleInternasionalConfigChange} rows="2" className={inputClass}></textarea></div>
                    <div><label className={labelClass}>Ukuran Font Judul</label><select name="heroTitleSize" value={formInternasionalConfig.heroTitleSize} onChange={handleInternasionalConfigChange} className={inputClass}>{titleSizeOptions}</select></div>
-                   <div><label className={labelClass}>Posisi Fokus Gambar</label><select name="heroBgPos" value={formInternasionalConfig.heroBgPos} onChange={handleInternasionalConfigChange} className={inputClass}>{bgPosOptions}</select></div>
+                   <div><label className={labelClass}>Posisi Fokus Gambar Hero</label>{renderImagePosControl(formInternasionalConfig.heroBgPos, (val) => setFormInternasionalConfig({...formInternasionalConfig, heroBgPos: val}))}</div>
                    <div className="md:col-span-2"><label className={labelClass}>Background Gambar Hero Internasional</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'heroBg', 'internasional')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl mb-1 bg-slate-50 outline-none"/></div>
                    <div><label className={labelClass}>Tampilkan 3 Ikon Info?</label><select name="showBadges" value={formInternasionalConfig.showBadges} onChange={handleInternasionalConfigChange} className={inputClass}><option value="ya">Ya, Tampilkan</option><option value="tidak">Sembunyikan</option></select></div>
                  </div>
@@ -1080,6 +1199,7 @@ function AdminDashboard() {
                    <div><label className={labelClass}>Teks Tombol Hubungi</label><input type="text" name="ctaBtnText" value={formInternasionalConfig.ctaBtnText || ""} onChange={handleInternasionalConfigChange} className={inputClass}/></div>
                    <div><label className={labelClass}>Nomor WA (Link)</label><input type="text" name="ctaBtnLink" value={formInternasionalConfig.ctaBtnLink || ""} onChange={handleInternasionalConfigChange} className={inputClass}/></div>
                    <div><label className={labelClass}>Warna Latar CTA</label><select name="ctaBgColor" value={formInternasionalConfig.ctaBgColor || "bg-[#1e3a8a]"} onChange={handleInternasionalConfigChange} className={inputClass}>{bgColorOptions}</select></div>
+                   <div><label className={labelClass}>Posisi Fokus Gambar CTA</label>{renderImagePosControl(formInternasionalConfig.ctaBgPos, (val) => setFormInternasionalConfig({...formInternasionalConfig, ctaBgPos: val}))}</div>
                    <div className="md:col-span-2"><label className={labelClass}>Background Gambar CTA (Opsional)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'ctaBg', 'internasional')} className="w-full text-sm border border-gray-200 p-2.5 rounded-xl bg-slate-50"/></div>
                  </div>
                </div>

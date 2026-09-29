@@ -10,6 +10,43 @@ import {
 
 const IconMap = { ShieldCheck, Star, Heart, Clock, Award, MapPin, ThumbsUp, Users, Gem, Bus, Plane, Building, TrainFront };
 
+// Fungsi pembaca posisi gambar (mendukung angka +/- maupun preset dropdown)
+// Fungsi pembaca posisi gambar: memisahkan posisi Laptop (Vertikal) & Smartphone (Horizontal +/-)
+const resolveImagePos = (pos) => {
+  if (!pos && pos !== 0) return "50% 50%";
+  const str = pos.toString().trim();
+  const isMobileView = typeof window !== "undefined" && window.innerWidth < 768;
+
+  // 1. Jika menggunakan format terpisah "offsetHP|posisiLaptop" (contoh: "+25|0%")
+  if (str.includes("|")) {
+    const [rawX, rawY] = str.split("|");
+    const y = (rawY || "50%").trim();
+    let x = "50%";
+    if (/^[+-]?\d+$/.test((rawX || "").trim())) {
+      const offset = parseInt(rawX.trim(), 10);
+      x = `${Math.max(0, Math.min(100, 50 + offset))}%`;
+    }
+    // Di Laptop: Kunci horizontal di tengah (50%) dan ikuti posisi vertikal Laptop (y)
+    // Di Smartphone: Ikuti geseran kiri/kanan (x) dan vertikal (y)
+    return isMobileView ? `${x} ${y}` : `50% ${y}`;
+  }
+
+  // 2. Kompatibilitas nilai lama
+  const map = {
+    "bg-center": "50% 50%", "bg-top": "50% 0%", "bg-bottom": "50% 100%",
+    "object-center": "50% 50%", "object-top": "50% 0%", "object-bottom": "50% 100%"
+  };
+  if (map[str]) return map[str];
+
+  if (/^[+-]?\d+$/.test(str)) {
+    const offset = parseInt(str, 10);
+    const x = Math.max(0, Math.min(100, 50 + offset));
+    return isMobileView ? `${x}% 50%` : "50% 50%";
+  }
+
+  return str;
+};
+
 const defaultUmrohConfig = {
   heroSmallText: "Perjalanan Ibadah",
   heroSmallTextSize: "text-[10px] md:text-sm",
@@ -17,14 +54,14 @@ const defaultUmrohConfig = {
   heroDesc: "Kami hadir untuk memberikan pengalaman ibadah Umroh yang nyaman.", 
   heroBg: "https://images.unsplash.com/photo-1565552643982-b5e13d9646b9?q=80&w=2000",
   heroTitleSize: "text-[32px] md:text-5xl lg:text-6xl",
-  heroBgPos: "bg-center",
+  heroBgPos: "0",
   f1Text: "Amanah & Terpercaya", f1Icon: "ShieldCheck", 
   f2Text: "Pembimbing Berpengalaman", f2Icon: "Users", 
   f3Text: "Pelayanan Terbaik", f3Icon: "Star",
   ctaBg: "", ctaTitle: "Siap Berangkat Umroh?", 
   ctaDesc: "Percayakan perjalanan ibadah Anda bersama Enka Imron Mandiri.", 
   ctaBtnText: "Hubungi Kami Sekarang", ctaBtnLink: "https://wa.me/6281234567890", 
-  ctaBgColor: "bg-[#0f172a]", ctaBgPos: "object-center"
+  ctaBgColor: "bg-[#0f172a]", ctaBgPos: "0"
 };
 
 function Umroh() {
@@ -34,7 +71,6 @@ function Umroh() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // State untuk Slideshow Mobile & Pencarian
   const [beritaSlide, setBeritaSlide] = useState(0);
   const [searchWaktu, setSearchWaktu] = useState("");
   const [searchTipe, setSearchTipe] = useState("");
@@ -112,14 +148,12 @@ function Umroh() {
           <img src={pkg.image || "https://images.unsplash.com/photo-1565552643982-b5e13d9646b9?q=80&w=800"} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70"></div>
           
-          {/* Badge Kategori (Kiri Atas) */}
           {pkg.badge && pkg.badge !== "Tidak Ada" && pkg.badge.trim() !== "" && (
             <div className={`absolute top-4 left-4 text-white text-[11px] font-bold px-3 py-1.5 rounded-md shadow-md ${badgeColors[pkg.badge] || pkg.badgeColor || 'bg-blue-600'}`}>
               {pkg.badge}
             </div>
           )}
 
-          {/* Label Status Kuota (Kanan Atas - Hanya Muncul Jika Diaktifkan di Admin) */}
           {showKuota && (
             <div className="absolute top-4 right-4">
               {isFullBooked ? (
@@ -195,8 +229,15 @@ function Umroh() {
   return (
     <div className="pt-20 bg-slate-50 min-h-screen overflow-x-hidden">
       
+      {/* HERO SECTION DENGAN POSISI GAMBAR +/- */}
       <div className="relative bg-[#0f172a] pt-16 pb-32 md:pt-24 md:pb-28">
-        <div className={`absolute inset-0 bg-cover ${config.heroBgPos || 'bg-center'}`} style={{ backgroundImage: `url('${config.heroBg || defaultUmrohConfig.heroBg}')` }}></div>
+        <div 
+          className="absolute inset-0 bg-cover bg-no-repeat" 
+          style={{ 
+            backgroundImage: `url('${config.heroBg || defaultUmrohConfig.heroBg}')`,
+            backgroundPosition: resolveImagePos(config.heroBgPos)
+          }}
+        ></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/90 via-[#1e3a8a]/60 to-transparent"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
           {config.heroSmallText && (
@@ -322,13 +363,14 @@ function Umroh() {
             </div>
           )}
 
+          {/* KEUNGGULAN: SEJAJAR 1 BARIS DI PC (HINGGA 5 IKON) & 2 KIRI-KANAN DI HP */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
             <div className="text-center mb-12"><h2 className="text-2xl md:text-3xl font-extrabold text-[#1e3a8a]">Mengapa Memilih Kami?</h2></div>
-            <div className="flex flex-wrap justify-center gap-6 md:gap-10">
+            <div className="flex flex-wrap md:flex-nowrap justify-center gap-x-4 gap-y-8 md:gap-6 max-w-6xl mx-auto">
               {keunggulan.length > 0 ? keunggulan.map((fitur) => {
                 const DynamicIcon = IconMap[fitur.icon] || Star;
                 return (
-                  <div key={fitur.id} className="flex flex-col items-center text-center max-w-[180px] group">
+                  <div key={fitur.id} className="w-[calc(50%-8px)] md:w-auto md:flex-1 md:max-w-[220px] flex flex-col items-center text-center group px-1">
                     <div className="w-16 h-16 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center shadow-lg mb-4 group-hover:-translate-y-1 transition-transform"><DynamicIcon size={28} /></div>
                     <h4 className="text-[14px] md:text-base font-bold text-[#1e3a8a] mb-2 leading-tight">{fitur.title}</h4>
                     <p className="text-gray-500 text-[11px] md:text-xs leading-relaxed">{fitur.deskripsi}</p>
@@ -338,9 +380,16 @@ function Umroh() {
             </div>
           </div>
 
+          {/* BANNER CTA DENGAN POSISI GAMBAR +/- */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
             <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[200px] md:min-h-[250px] flex items-center ${config.ctaBgColor || 'bg-[#1e3a8a]'}`}>
-              <div className="absolute inset-0 w-full h-full"><img src={config.ctaBg || defaultUmrohConfig.heroBg} className={`w-full h-full object-cover ${config.ctaBgPos || 'object-center'}`} /></div>
+              <div className="absolute inset-0 w-full h-full">
+                <img 
+                  src={config.ctaBg || defaultUmrohConfig.heroBg} 
+                  style={{ objectPosition: resolveImagePos(config.ctaBgPos) }}
+                  className="w-full h-full object-cover" 
+                />
+              </div>
               <div className={`absolute inset-0 bg-gradient-to-r ${getCtaGradient(config.ctaBgColor || 'bg-[#1e3a8a]')}`}></div>
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
               <div className="relative z-10 w-full md:w-2/3 p-8 md:p-12 text-left">

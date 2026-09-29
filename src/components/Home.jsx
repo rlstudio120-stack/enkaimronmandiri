@@ -20,6 +20,43 @@ const IconMap = {
   ShoppingBag, Utensils, Wifi, Landmark, Ticket 
 };
 
+// Fungsi pembaca posisi gambar (mendukung angka +/- maupun preset dropdown)
+// Fungsi pembaca posisi gambar: memisahkan posisi Laptop (Vertikal) & Smartphone (Horizontal +/-)
+const resolveImagePos = (pos) => {
+  if (!pos && pos !== 0) return "50% 50%";
+  const str = pos.toString().trim();
+  const isMobileView = typeof window !== "undefined" && window.innerWidth < 768;
+
+  // 1. Jika menggunakan format terpisah "offsetHP|posisiLaptop" (contoh: "+25|0%")
+  if (str.includes("|")) {
+    const [rawX, rawY] = str.split("|");
+    const y = (rawY || "50%").trim();
+    let x = "50%";
+    if (/^[+-]?\d+$/.test((rawX || "").trim())) {
+      const offset = parseInt(rawX.trim(), 10);
+      x = `${Math.max(0, Math.min(100, 50 + offset))}%`;
+    }
+    // Di Laptop: Kunci horizontal di tengah (50%) dan ikuti posisi vertikal Laptop (y)
+    // Di Smartphone: Ikuti geseran kiri/kanan (x) dan vertikal (y)
+    return isMobileView ? `${x} ${y}` : `50% ${y}`;
+  }
+
+  // 2. Kompatibilitas nilai lama
+  const map = {
+    "bg-center": "50% 50%", "bg-top": "50% 0%", "bg-bottom": "50% 100%",
+    "object-center": "50% 50%", "object-top": "50% 0%", "object-bottom": "50% 100%"
+  };
+  if (map[str]) return map[str];
+
+  if (/^[+-]?\d+$/.test(str)) {
+    const offset = parseInt(str, 10);
+    const x = Math.max(0, Math.min(100, 50 + offset));
+    return isMobileView ? `${x}% 50%` : "50% 50%";
+  }
+
+  return str;
+};
+
 const formatWaNumber = (num) => {
   if (!num) return "";
   let clean = num.toString().replace(/\D/g, "");
@@ -40,9 +77,15 @@ const defaultLayanan = [
 ];
 
 const defaultConfig = {
-  heroTitle: "Perjalanan Anda,\nAmanah Kami", heroDesc: "Melayani perjalanan Domestik, Internasional, dan Umroh dengan pelayanan terbaik dan penuh amanah.", heroBg: "https://images.unsplash.com/photo-1512453979436-5a5369ce9e12?q=80&w=2000", showBadges: "ya",
+  heroTitle: "Perjalanan Anda,\nAmanah Kami", 
+  heroDesc: "Melayani perjalanan Domestik, Internasional, dan Umroh dengan pelayanan terbaik dan penuh amanah.", 
+  heroBg: "https://images.unsplash.com/photo-1512453979436-5a5369ce9e12?q=80&w=2000", 
+  heroBgPos: "0",
+  showBadges: "ya",
   b1Text: "Terpercaya", b1Icon: "ShieldCheck", b2Text: "Harga Terbaik", b2Icon: "Star", b3Text: "Pelayanan Prima", b3Icon: "Heart",
-  promoSmall: "Paket Umroh 2024", promoTitle: "Berangkat Nyaman,\nIbadah Khusyuk", promoBtn: "Cek Promo", promoPrice: "25", promoLink: "/umroh", promoBg: "https://images.unsplash.com/photo-1565552643952-2508825c868c?q=80&w=800",
+  promoSmall: "Paket Umroh 2024", promoTitle: "Berangkat Nyaman,\nIbadah Khusyuk", promoBtn: "Cek Promo", promoPrice: "25", promoLink: "/umroh", 
+  promoBg: "https://images.unsplash.com/photo-1565552643952-2508825c868c?q=80&w=800",
+  promoBgPos: "0",
   testiAutoSlide: "ya"
 };
 
@@ -64,6 +107,7 @@ function Home() {
   const [testimoniList, setTestimoniList] = useState(defaultTestimoni);
 
   useEffect(() => {
+    document.title = "Enka Imron Mandiri | Travel Umroh, Domestik & Internasional";
     const fetchAllData = async () => {
       try {
         const configSnap = await getDoc(doc(db, "settings", "home"));
@@ -122,20 +166,26 @@ function Home() {
 
   const getPromoGradient = (bgColor) => {
     switch(bgColor) {
-      case "bg-[#1e3a8a]": return "from-transparent via-[#1e3a8a]/80 to-[#1e3a8a] md:via-[#1e3a8a]/60";
-      case "bg-[#f59e0b]": return "from-transparent via-[#f59e0b]/80 to-[#f59e0b] md:via-[#f59e0b]/60";
-      case "bg-emerald-800": return "from-transparent via-emerald-800/80 to-emerald-800 md:via-emerald-800/60";
-      case "bg-black": return "from-transparent via-black/80 to-black md:via-black/60";
-      default: return "from-transparent via-[#0f172a]/80 to-[#0f172a] md:via-[#0f172a]/60";
+      case "bg-[#1e3a8a]": return "from-[#1e3a8a]/95 via-[#1e3a8a]/75 to-transparent";
+      case "bg-[#f59e0b]": return "from-[#f59e0b]/95 via-[#f59e0b]/75 to-transparent";
+      case "bg-emerald-800": return "from-emerald-800/95 via-emerald-800/75 to-transparent";
+      case "bg-black": return "from-black/95 via-black/75 to-transparent";
+      default: return "from-[#0f172a]/95 via-[#0f172a]/75 to-transparent";
     }
   };
 
   return (
     <div className="font-sans bg-white pt-20 overflow-x-hidden">
       
-      {/* 1. HERO SECTION */}
+      {/* 1. HERO SECTION (MENDUKUNG POSISI GAMBAR +/-) */}
       <div className="relative bg-[#0f172a] pt-16 pb-36 md:pt-24 md:pb-28">
-        <div className={`absolute inset-0 bg-cover ${config.heroBgPos || 'bg-center'}`} style={{ backgroundImage: `url('${config.heroBg || defaultConfig.heroBg}')` }}></div>
+        <div 
+          className="absolute inset-0 bg-cover bg-no-repeat" 
+          style={{ 
+            backgroundImage: `url('${config.heroBg || defaultConfig.heroBg}')`,
+            backgroundPosition: resolveImagePos(config.heroBgPos)
+          }}
+        ></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#1e3a8a]/90 via-[#1e3a8a]/40 to-transparent md:from-[#1e3a8a] md:via-[#1e3a8a]/70 md:via-35% md:to-transparent"></div>
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
@@ -334,53 +384,110 @@ function Home() {
         </div>
       </div>
 
-      {/* 4. PROMO BANNER */}
+      {/* 4. PROMO BANNER (KOTAK HARGA DI TENGAH UNTUK LAPTOP/PC, MOBILE TETAP SAMA) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 md:mb-24">
-        <div className={`relative rounded-2xl md:rounded-3xl overflow-hidden shadow-xl flex items-center min-h-[140px] md:min-h-[220px] ${config.promoBgColor || 'bg-[#0f172a]'}`}>
+        <div className={`relative rounded-3xl overflow-hidden shadow-xl min-h-[220px] md:min-h-[260px] flex items-center ${config.promoBgColor || 'bg-[#0f172a]'}`}>
           <div className="absolute inset-0 w-full h-full">
-            <img src={config.promoBg || defaultConfig.promoBg} className={`w-full h-full object-cover ${config.promoBgPos || 'object-center'}`} />
+            <img 
+              src={config.promoBg || defaultConfig.promoBg} 
+              style={{ objectPosition: resolveImagePos(config.promoBgPos) }}
+              className="w-full h-full object-cover" 
+            />
           </div>
           
           <div className={`absolute inset-0 bg-gradient-to-r ${getPromoGradient(config.promoBgColor)}`}></div>
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}></div>
           
-          <div className="relative z-10 w-full p-5 md:p-10 flex flex-row items-center justify-end gap-3 md:gap-8 ml-auto">
-            <div className="flex flex-col items-start text-left max-w-[160px] md:max-w-md">
-              <p className="text-[#f59e0b] font-bold tracking-widest text-[8px] md:text-xs uppercase mb-0.5 md:mb-1">{config.promoSmall}</p>
-              <h3 className="text-[13px] md:text-3xl font-bold text-white mb-2 md:mb-4 leading-tight whitespace-pre-wrap">{config.promoTitle}</h3>
-              <Link to={config.promoLink || "/umroh"} className="inline-block bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-1.5 px-3 md:py-3 md:px-6 rounded-md md:rounded-xl text-[9px] md:text-base transition shadow-lg">
-                {config.promoBtn}
-              </Link>
+          <div className="relative z-10 w-full p-8 md:p-12 flex flex-col md:grid md:grid-cols-12 md:items-center gap-6">
+            
+            {/* Sisi Kiri: Teks & Tombol (Tampilan Smartphone Tetap Sama Persis) */}
+            <div className="text-left md:col-span-5">
+              {config.promoSmall && (
+                <p className="text-[#f59e0b] font-bold tracking-widest text-xs md:text-sm uppercase mb-2">
+                  {config.promoSmall}
+                </p>
+              )}
+              <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 leading-snug whitespace-pre-wrap">
+                {config.promoTitle}
+              </h2>
+
+              {/* Kotak Harga Versi Smartphone (Tidak Diubah) */}
+              {config.promoPrice && (
+                <div className="inline-flex md:hidden items-baseline gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl mb-5">
+                  <span className="text-blue-100 text-xs font-semibold uppercase tracking-wider">Mulai Dari</span>
+                  <span className="text-xl font-extrabold text-[#f59e0b]">{config.promoPrice} Jt-an</span>
+                </div>
+              )}
+
+              <div>
+                <Link 
+                  to={config.promoLink || "/umroh"} 
+                  className="inline-block bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-colors text-sm md:text-base"
+                >
+                  {config.promoBtn || "Cek Promo"}
+                </Link>
+              </div>
             </div>
-            <div className="bg-[#1e3a8a]/70 border border-blue-500/30 p-3 md:p-6 rounded-lg md:rounded-xl flex flex-col items-center justify-center shrink-0 backdrop-blur-sm min-w-[90px] md:min-w-[180px]">
-              <p className="text-blue-200 text-[8px] md:text-sm font-semibold uppercase tracking-widest mb-0.5 md:mb-1">Mulai Dari</p>
-              <h4 className="text-lg md:text-5xl font-extrabold text-[#f59e0b]">{(config.promoPrice)} <span className="text-[9px] md:text-lg font-bold">Jt-an</span></h4>
+
+            {/* Bagian Tengah: Kotak Harga Versi Laptop/PC (Tepat di Tengah Banner) */}
+            <div className="hidden md:flex md:col-span-3 justify-center">
+              {config.promoPrice && (
+                <div className="bg-[#1e3a8a]/80 border border-white/20 p-6 rounded-2xl flex flex-col items-center justify-center shrink-0 backdrop-blur-md min-w-[190px] shadow-lg">
+                  <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Mulai Dari</p>
+                  <h4 className="text-4xl lg:text-5xl font-extrabold text-[#f59e0b]">
+                    {config.promoPrice} <span className="text-lg font-bold">Jt-an</span>
+                  </h4>
+                </div>
+              )}
             </div>
+
+            {/* Sisi Kanan Laptop/PC: Ruang Terbuka Agar Objek Foto Terlihat Jelas */}
+            <div className="hidden md:block md:col-span-4"></div>
+
           </div>
         </div>
       </div>
 
-      {/* 5. MENGAPA KAMI */}
+      {/* 5. MENGAPA KAMI (2 KIRI-KANAN DI HP & OTOMATIS DI TENGAH JIKA GANJIL / LEBIH DARI 4) */}
       <div className="bg-slate-50 border-t border-gray-100 py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10 md:mb-16"><p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Mengapa Memilih Kami?</p><h2 className="text-2xl md:text-4xl font-extrabold text-[#1e3a8a]">Keunggulan Kami</h2></div>
+          <div className="text-center mb-10 md:mb-16">
+            <p className="text-xs md:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1 md:mb-2">Mengapa Memilih Kami?</p>
+            <h2 className="text-2xl md:text-4xl font-extrabold text-[#1e3a8a]">Keunggulan Kami</h2>
+          </div>
+
+          {/* TAMPILAN LAPTOP/DESKTOP: 4 Per Baris, Sisanya Otomatis di Tengah */}
           {!isMobile && (
-            <div className="grid grid-cols-4 gap-8">
+            <div className="flex flex-nowrap justify-center gap-6">
               {(mengapaList.length > 0 ? mengapaList : []).map((fitur) => {
                 const DynamicIcon = IconMap[fitur.icon] || Star;
                 return (
-                  <div key={fitur.id} className="flex gap-4 items-start group"><div className={`w-14 h-14 shrink-0 text-white rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${fitur.color || 'bg-[#1e3a8a]'}`}><DynamicIcon size={28} /></div><div><h4 className="text-lg font-bold text-gray-800 mb-1 leading-tight">{fitur.title}</h4><p className="text-gray-500 text-xs leading-relaxed">{fitur.deskripsi}</p></div></div>
+                  <div key={fitur.id} className="flex-1 max-w-[280px] flex gap-4 items-start group">
+                    <div className={`w-14 h-14 shrink-0 text-white rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${fitur.color || 'bg-[#1e3a8a]'}`}>
+                      <DynamicIcon size={28} />
+                    </div>
+                    <div>
+                      <h4 className="text-base lg:text-lg font-bold text-gray-800 mb-1 leading-tight">{fitur.title}</h4>
+                      <p className="text-gray-500 text-xs leading-relaxed">{fitur.deskripsi}</p>
+                    </div>
+                  </div>
                 );
               })}
             </div>
           )}
+
+          {/* TAMPILAN SMARTPHONE: Pasti 2 Kiri-Kanan, dan 1 Sendirian Otomatis di Tengah */}
           {isMobile && (
-            <div className="flex flex-wrap justify-center gap-y-6 gap-x-2">
+            <div className="flex flex-wrap justify-center gap-y-6 gap-x-4">
               {(mengapaList.length > 0 ? mengapaList : []).map((fitur) => {
                 const DynamicIcon = IconMap[fitur.icon] || Star;
-                const count = mengapaList.length; const isEven = count === 4 || count === 2; 
                 return (
-                  <div key={fitur.id} className={`flex ${isEven ? 'w-[47%] flex-row text-left gap-2' : 'w-[30%] flex-col text-center gap-1.5'} items-center`}><div className={`w-12 h-12 shrink-0 text-white rounded-xl flex items-center justify-center shadow-md ${fitur.color || 'bg-[#1e3a8a]'}`}><DynamicIcon size={24} strokeWidth={1.5} /></div><span className="text-[10px] font-bold text-gray-800 leading-tight">{fitur.title}</span></div>
+                  <div key={fitur.id} className="w-[calc(50%-8px)] flex flex-row items-center justify-center sm:justify-start text-left gap-2.5 px-1">
+                    <div className={`w-12 h-12 shrink-0 text-white rounded-xl flex items-center justify-center shadow-md ${fitur.color || 'bg-[#1e3a8a]'}`}>
+                      <DynamicIcon size={24} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-800 leading-tight">{fitur.title}</span>
+                  </div>
                 );
               })}
             </div>
