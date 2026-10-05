@@ -176,8 +176,8 @@ function TimKami() {
             {filterTim("Tim Wisata / Operasional").length > 0 && (
               <section className="bg-blue-50 rounded-3xl p-8 border border-blue-100">
                 <div className="mb-10 text-center md:text-left">
-                  <h2 className="text-xl md:text-2xl font-extrabold text-[#1e3a8a] flex items-center justify-center md:justify-start gap-2"><ShieldCheck className="text-blue-600" size={24}/> Tim Operasional</h2>
-                  <p className="text-gray-600 text-xs mt-2">Tim di balik layar yang mengurus administrasi, tiket, dan persiapan teknis.</p>
+                  <h2 className="text-xl md:text-2xl font-extrabold text-[#1e3a8a] flex items-center justify-center md:justify-start gap-2"><ShieldCheck className="text-blue-600" size={24}/> Tim Wisata & Operasional</h2>
+                  <p className="text-gray-600 text-xs mt-2">Tim handal yang memastikan kelancaran perjalanan wisata, pelayanan jamaah, administrasi, hingga teknis lapangan.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   {filterTim("Tim Wisata / Operasional").map(person => <ProfileCard key={person.id} person={person} />)}
