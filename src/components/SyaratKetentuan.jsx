@@ -36,9 +36,8 @@ function SyaratKetentuan() {
 
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 md:p-14 relative overflow-hidden">
           <div className="absolute top-0 right-0 opacity-5 pointer-events-none p-10"><FileText size={200}/></div>
-          <div className="relative z-10 text-gray-700 leading-relaxed text-sm md:text-base
-            [&>p]:mb-5 [&>h3]:text-xl [&>h3]:font-bold [&>h3]:text-[#1e3a8a] [&>h3]:mb-4 [&>h3]:mt-10 [&>h3]:border-b [&>h3]:pb-2 [&>h3]:border-gray-100
-            [&>ul]:list-decimal [&>ul]:pl-6 [&>ul]:mb-5 [&>ul>li]:mb-3"
+          <div className="konten-html relative z-10 text-gray-700 leading-relaxed text-sm md:text-base 
+            [&>p]:mb-5 [&>h3]:text-xl [&>h3]:font-bold [&>h3]:text-[#1e3a8a] [&>h3]:mb-4 [&>h3]:mt-10 [&>h3]:border-b [&>h3]:pb-2 [&>h3]:border-gray-100"
             dangerouslySetInnerHTML={{ __html: data.isi }} />
         </div>
       </div>

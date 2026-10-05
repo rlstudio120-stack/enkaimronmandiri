@@ -116,6 +116,8 @@ function Navbar() {
       document.title = `Syarat & Ketentuan | ${brand}`;
     } else if (path === "/tentang") {
       document.title = `Tentang Kami | ${brand}`;
+    } else if (path === "/tim-kami") {
+      document.title = `Struktur & Tim Kami | ${brand}`;
     }
   }, [location.pathname, identitas]);
 
@@ -198,15 +200,32 @@ function Navbar() {
               {/* MENU DESKTOP */}
               <div className="hidden md:flex items-center space-x-8">
                 <Link to="/" className={`font-bold text-sm transition-colors ${isActive('/') ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Beranda</Link>
+                
                 <div className="relative group">
                   <button className={`flex items-center gap-1 font-bold text-sm transition-colors py-2 ${['/umroh', '/domestik', '/internasional'].includes(location.pathname) ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Paket Perjalanan <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" /></button>
                   <div className="absolute top-full left-0 pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"><div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col py-2"><Link to="/umroh" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors"><Tent size={18} className="text-[#f59e0b]"/> Paket Umroh</Link><Link to="/domestik" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors"><MapPin size={18} className="text-emerald-500"/> Trip Domestik</Link><Link to="/internasional" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors"><Globe size={18} className="text-purple-500"/> Trip Internasional</Link></div></div>
                 </div>
+
                 <div className="relative group">
                   <button className={`flex items-center gap-1 font-bold text-sm transition-colors py-2 ${['/berita', '/faq', '/syarat'].includes(location.pathname) ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Pusat Informasi <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" /></button>
                   <div className="absolute top-full left-0 pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"><div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col py-2"><Link to="/berita" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors"><FileText size={18} className="text-blue-500"/> Berita & Artikel</Link><Link to="/faq" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors"><MessageCircle size={18} className="text-orange-500"/> Tanya Jawab (FAQ)</Link><Link to="/syarat" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors"><Info size={18} className="text-gray-400"/> Syarat & Ketentuan</Link></div></div>
                 </div>
-                <Link to="/tentang" className={`font-bold text-sm transition-colors ${isActive('/tentang') ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Tentang Kami</Link>
+
+                {/* DROPDOWN BARU: PROFIL PERUSAHAAN */}
+                <div className="relative group">
+                  <button className={`flex items-center gap-1 font-bold text-sm transition-colors py-2 ${['/tentang', '/tim-kami'].includes(location.pathname) ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Profil Perusahaan <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" /></button>
+                  <div className="absolute top-full left-0 pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col py-2">
+                      <Link to="/tentang" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors">
+                        <Building size={18} className="text-emerald-600"/> Tentang Kami
+                      </Link>
+                      <Link to="/tim-kami" className="px-5 py-3 hover:bg-blue-50 hover:text-[#1e3a8a] flex items-center gap-3 text-sm font-semibold text-gray-600 transition-colors">
+                        <Users size={18} className="text-blue-600"/> Struktur & Tim Kami
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
                 <a href={activeWaLink} target="_blank" rel="noopener noreferrer" className="bg-[#f59e0b] hover:bg-yellow-500 text-black px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-lg shadow-yellow-500/20 flex items-center gap-2"><MessageCircle size={18} /> Hubungi Kami</a>
               </div>
 
@@ -224,9 +243,28 @@ function Navbar() {
         <div className={`md:hidden absolute w-full bg-white border-b border-gray-100 shadow-2xl transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-[80vh] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'}`} style={{ top: "100%" }}>
           <div className="px-5 pt-3 pb-8 space-y-2 flex flex-col">
             <Link to="/" onClick={closeMenu} className={`block px-4 py-3.5 rounded-xl font-bold text-[15px] ${isActive('/') ? 'bg-blue-50 text-[#1e3a8a]' : 'text-gray-600 hover:bg-slate-50'}`}>Beranda</Link>
+            
             <div className="bg-slate-50 rounded-xl overflow-hidden"><button onClick={() => toggleMobileDropdown('paket')} className="w-full px-4 py-3.5 font-bold text-[15px] text-gray-600 flex justify-between items-center focus:outline-none">Paket Perjalanan <ChevronDown size={16} className={`transition-transform duration-300 ${mobileMenuOpen === 'paket' ? 'rotate-180 text-[#f59e0b]' : 'text-gray-400'}`} /></button><div className={`transition-all duration-300 ${mobileMenuOpen === 'paket' ? 'max-h-60' : 'max-h-0'}`}><div className="px-4 pb-3 space-y-1"><Link to="/umroh" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]"><Tent size={16} className="text-[#f59e0b]"/> Paket Umroh</Link><Link to="/domestik" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]"><MapPin size={16} className="text-emerald-500"/> Trip Domestik</Link><Link to="/internasional" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]"><Globe size={16} className="text-purple-500"/> Trip Internasional</Link></div></div></div>
+            
             <div className="bg-slate-50 rounded-xl overflow-hidden"><button onClick={() => toggleMobileDropdown('info')} className="w-full px-4 py-3.5 font-bold text-[15px] text-gray-600 flex justify-between items-center focus:outline-none">Pusat Informasi <ChevronDown size={16} className={`transition-transform duration-300 ${mobileMenuOpen === 'info' ? 'rotate-180 text-[#f59e0b]' : 'text-gray-400'}`} /></button><div className={`transition-all duration-300 ${mobileMenuOpen === 'info' ? 'max-h-60' : 'max-h-0'}`}><div className="px-4 pb-3 space-y-1"><Link to="/berita" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]"><FileText size={16} className="text-blue-500"/> Berita & Artikel</Link><Link to="/faq" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]"><MessageCircle size={16} className="text-orange-500"/> Tanya Jawab (FAQ)</Link><Link to="/syarat" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]"><Info size={16} className="text-gray-400"/> Syarat & Ketentuan</Link></div></div></div>
-            <Link to="/tentang" onClick={closeMenu} className={`block px-4 py-3.5 rounded-xl font-bold text-[15px] ${isActive('/tentang') ? 'bg-blue-50 text-[#1e3a8a]' : 'text-gray-600 hover:bg-slate-50'}`}>Tentang Kami</Link>
+            
+            {/* DROPDOWN BARU MOBILE: PROFIL PERUSAHAAN */}
+            <div className="bg-slate-50 rounded-xl overflow-hidden">
+              <button onClick={() => toggleMobileDropdown('profil')} className="w-full px-4 py-3.5 font-bold text-[15px] text-gray-600 flex justify-between items-center focus:outline-none">
+                Profil Perusahaan <ChevronDown size={16} className={`transition-transform duration-300 ${mobileMenuOpen === 'profil' ? 'rotate-180 text-[#f59e0b]' : 'text-gray-400'}`} />
+              </button>
+              <div className={`transition-all duration-300 ${mobileMenuOpen === 'profil' ? 'max-h-60' : 'max-h-0'}`}>
+                <div className="px-4 pb-3 space-y-1">
+                  <Link to="/tentang" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]">
+                    <Building size={16} className="text-emerald-600"/> Tentang Kami
+                  </Link>
+                  <Link to="/tim-kami" onClick={closeMenu} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-white hover:text-[#1e3a8a]">
+                    <Users size={16} className="text-blue-600"/> Struktur & Tim Kami
+                  </Link>
+                </div>
+              </div>
+            </div>
+
             <div className="pt-5 mt-3 border-t border-gray-100"><a href={activeWaLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-center bg-[#f59e0b] hover:bg-yellow-500 text-black px-5 py-3.5 rounded-xl font-bold text-[15px] shadow-lg shadow-yellow-500/20"><MessageCircle size={20} /> Hubungi via WhatsApp</a></div>
           </div>
         </div>

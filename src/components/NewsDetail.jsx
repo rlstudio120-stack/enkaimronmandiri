@@ -95,11 +95,9 @@ function NewsDetail() {
           )}
 
           {/* Isi Konten Berita (HTML dari Jodit Editor) */}
-          <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed
-            prose-headings:text-[#1e3a8a] prose-headings:font-bold prose-a:text-[#f59e0b] hover:prose-a:text-yellow-600
-            [&>p]:mb-6 [&>img]:rounded-xl [&>img]:my-6 [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-2"
-            dangerouslySetInnerHTML={{ __html: berita.text }} 
-          />
+          <div className="konten-html prose prose-lg max-w-none text-gray-700 leading-relaxed
+                prose-headings:text-[#1e3a8a] prose-headings:font-bold prose-a:text-[#f59e0b] hover:prose-a:text-yellow-600
+                [&>p]:mb-6 [&>img]:rounded-xl [&>img]:my-6" dangerouslySetInnerHTML={{ __html: berita.text }} />
         </div>
 
       </div>

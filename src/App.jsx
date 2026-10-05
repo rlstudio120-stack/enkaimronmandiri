@@ -34,6 +34,7 @@ import NewsDetail from "./components/NewsDetail";
 import TentangKami from "./components/TentangKami";
 import SyaratKetentuan from "./components/SyaratKetentuan";
 import Faq from "./components/Faq";
+import TimKami from "./components/TimKami";
 
 // Lazy Load khusus Halaman Admin (Agar pengunjung umum tidak perlu mengunduh beban editor Admin)
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
@@ -120,6 +121,7 @@ function App() {
           {/* 4. RUTE BERITA & PROFIL */}
           <Route path="/berita" element={<News />} />
           <Route path="/berita/:id" element={<NewsDetail />} />
+          <Route path="/tim-kami" element={<TimKami />} />
           <Route path="/tentang" element={<TentangKami />} />
           <Route path="/syarat" element={<SyaratKetentuan />} />
           <Route path="/faq" element={<Faq />} />

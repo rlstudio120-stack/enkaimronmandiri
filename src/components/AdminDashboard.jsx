@@ -91,6 +91,8 @@ function AdminDashboard() {
   const initialTestimoni = { name: "", service: "Paket Umroh", img: "", text: "", stars: "5" };
   const initialFaq = { pertanyaan: "", jawaban: "", kategori: "Umum" };
   const initialUser = { name: "", username: "", email: "", password: "", role: "Admin Paket", status: "Aktif" };
+  const initialTimKami = { nama: "", jabatan: "", divisi: "Struktur PT", urutan: "99", quote: "", image: "", status: "Aktif" };
+  const initialTimConfig = { heroTitle: "Struktur & Tim Kami", heroDesc: "Berkenalan dengan orang-orang hebat di balik layanan kami.", heroBg: "", layoutPT: "Grid" };
 
   const initialIdentitas = { 
     namaBesar: "ENKA IMRON MANDIRI", tagline: "Travel Domestik • Internasional • Umroh", taglineSize: "text-[8px] md:text-[9px]", 
@@ -122,6 +124,8 @@ function AdminDashboard() {
   const [formTestimoni, setFormTestimoni] = useState(initialTestimoni);
   const [formFaq, setFormFaq] = useState(initialFaq);
   const [formUser, setFormUser] = useState(initialUser);
+  const [formTimKami, setFormTimKami] = useState(initialTimKami);
+  const [formTimConfig, setFormTimConfig] = useState(initialTimConfig);
   
   const [formIdentitas, setFormIdentitas] = useState(initialIdentitas);
   const [formFooter, setFormFooter] = useState(initialFooter);
@@ -165,6 +169,7 @@ function AdminDashboard() {
     if (activeTab === "config_internasional") { const snap = await getDoc(doc(db, "settings", "internasional")); if (snap.exists()) setFormInternasionalConfig({ ...initialInternasionalConfig, ...snap.data() }); return; } 
     if (activeTab === "tentang") { const snap = await getDoc(doc(db, "settings", "tentang")); if (snap.exists()) setFormTentang({ ...initialTentang, ...snap.data() }); return; }
     if (activeTab === "syarat") { const snap = await getDoc(doc(db, "settings", "syarat")); if (snap.exists()) setFormSyarat({ ...initialSyarat, ...snap.data() }); return; }
+    if (activeTab === "config_tim") { const snap = await getDoc(doc(db, "settings", "tim_kami")); if (snap.exists()) setFormTimConfig({ ...initialTimConfig, ...snap.data() }); return; }
 
     let colName = "";
     if (activeTab === "umroh") colName = "paket_umroh";
@@ -180,7 +185,8 @@ function AdminDashboard() {
     if (activeTab === "layanan") colName = "layanan_utama"; 
     if (activeTab === "testimoni") colName = "testimoni_pelanggan"; 
     if (activeTab === "faq") colName = "faq"; 
-    if (activeTab === "users") colName = "users_admin"; 
+    if (activeTab === "users") colName = "users_admin";
+    if (activeTab === "tim_kami") colName = "struktur_tim"; 
 
     if(colName) { const snapshot = await getDocs(collection(db, colName)); setDataList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); }
   };
@@ -235,6 +241,7 @@ function AdminDashboard() {
     else if (activeTab === "testimoni") setFormTestimoni(initialTestimoni); 
     else if (activeTab === "faq") setFormFaq(initialFaq); 
     else if (activeTab === "users") setFormUser(initialUser); 
+    else if (activeTab === "tim_kami") setFormTimKami(initialTimKami);
     setIsFormOpen(true); 
   };
 
@@ -254,6 +261,7 @@ function AdminDashboard() {
     else if (activeTab === "testimoni") setFormTestimoni({...initialTestimoni, ...item}); 
     else if (activeTab === "faq") setFormFaq({...initialFaq, ...item}); 
     else if (activeTab === "users") setFormUser({...initialUser, ...item, password: ""}); 
+    else if (activeTab === "tim_kami") setFormTimKami({...initialTimKami, ...item});
     setIsFormOpen(true); 
   };
 
@@ -300,6 +308,7 @@ function AdminDashboard() {
           else if(configType === "internasional") setFormInternasionalConfig({ ...formInternasionalConfig, [configField]: data.secure_url }); 
           else if(configType === "tentang") setFormTentang({ ...formTentang, [configField]: data.secure_url }); 
           else if(configType === "identitas") setFormIdentitas({ ...formIdentitas, [configField]: data.secure_url }); 
+          else if(configType === "tim") setFormTimConfig({ ...formTimConfig, [configField]: data.secure_url });
           else setFormConfig({ ...formConfig, [configField]: data.secure_url }); 
         } 
         else if (setFormFunc) { setFormFunc({ ...stateData, image: data.secure_url }); } 
@@ -311,6 +320,7 @@ function AdminDashboard() {
           else if (activeTab === "daerah_internasional") setFormDaerahInt({ ...formDaerahInt, image: data.secure_url }); 
           else if (activeTab === "berita") setFormBerita({ ...formBerita, image: data.secure_url }); 
           else if (activeTab === "layanan") setFormLayanan({ ...formLayanan, image: data.secure_url }); 
+          else if (activeTab === "tim_kami") setFormTimKami({ ...formTimKami, image: data.secure_url });
         } 
       } else alert("Gagal mengunggah gambar.");
     } catch (error) { alert("Terjadi kesalahan jaringan."); } finally { setIsUploading(false); }
@@ -351,7 +361,9 @@ function AdminDashboard() {
   const handleSaveInternasionalConfig = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "internasional"), formInternasionalConfig); showAlert("Pengaturan Internasional Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
   const handleSaveTentang = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "tentang"), formTentang); showAlert("Halaman Tentang Kami Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
   const handleSaveSyarat = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "syarat"), formSyarat); showAlert("Syarat & Ketentuan Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
-  
+  const handleTimConfigChange = (e) => setFormTimConfig({ ...formTimConfig, [e.target.name]: e.target.value });
+  const handleSaveTimConfig = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await setDoc(doc(db, "settings", "tim_kami"), formTimConfig); showAlert("Pengaturan Halaman Tim Disimpan!", "success"); } catch (error) { showAlert("Gagal menyimpan.", "error"); } finally { setIsSubmitting(false); } };
+
   const handleSubmit = async (e) => { 
     e.preventDefault(); setIsSubmitting(true); 
 
@@ -413,6 +425,7 @@ function AdminDashboard() {
     if (activeTab === "layanan") { colName = "layanan_utama"; dataToSave = formLayanan; } 
     if (activeTab === "testimoni") { colName = "testimoni_pelanggan"; dataToSave = formTestimoni; } 
     if (activeTab === "faq") { colName = "faq"; dataToSave = formFaq; } 
+    if (activeTab === "tim_kami") { colName = "struktur_tim"; dataToSave = formTimKami; }
     
     try { 
       if (editId) { await updateDoc(doc(db, colName, editId), dataToSave); showAlert("Data diperbarui.", "success"); } 
@@ -437,6 +450,7 @@ function AdminDashboard() {
       if (activeTab === "testimoni") colName = "testimoni_pelanggan"; 
       if (activeTab === "faq") colName = "faq"; 
       if (activeTab === "users") colName = "users_admin"; 
+      if (activeTab === "tim_kami") colName = "struktur_tim";
       await deleteDoc(doc(db, colName, id)); fetchData(); fetchDaerahOptions(); showAlert("Dihapus.", "success"); 
     }); 
   };
@@ -575,7 +589,7 @@ function AdminDashboard() {
     );
   };
 
-  const noTablePages = ["dashboard", "web_settings", "config", "config_umroh", "config_domestik", "config_internasional", "tentang", "syarat", "config_identitas", "config_footer"];
+  const noTablePages = ["dashboard", "web_settings", "config", "config_umroh", "config_domestik", "config_internasional", "tentang", "syarat", "config_identitas", "config_footer", "config_tim"];
 
   const isHomeSetting = ["config", "layanan", "mengapa", "testimoni"].includes(activeTab);
   const isUmrohSetting = ["config_umroh", "keunggulan_umroh"].includes(activeTab);
@@ -675,8 +689,10 @@ function AdminDashboard() {
                 <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-wider">Halaman Profil & Info</span>
                 <span className="text-[#f59e0b] opacity-70 group-hover:opacity-100 transition-opacity">{openMenus.profil ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</span>
               </button>
-              <div className={`overflow-hidden transition-all duration-300 ${openMenus.profil ? 'max-h-48' : 'max-h-0'}`}>
+              <div className={`overflow-hidden transition-all duration-300 ${openMenus.profil ? 'max-h-60' : 'max-h-0'}`}>
                 <button onClick={() => setActiveTab("tentang")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "tentang" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><InfoIcon size={18} /><span className="text-[13px] truncate">Tentang Kami</span></button>
+                <button onClick={() => setActiveTab("config_tim")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "config_tim" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><Users size={18} /><span className="text-[13px] truncate">Pengaturan Halaman Tim</span></button>
+                <button onClick={() => setActiveTab("tim_kami")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "tim_kami" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><UserPlus size={18} /><span className="text-[13px] truncate">Manajemen Anggota Tim</span></button>
                 <button onClick={() => setActiveTab("syarat")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "syarat" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><FileText size={18} /><span className="text-[13px] truncate">Syarat & Ketentuan</span></button>
                 <button onClick={() => setActiveTab("faq")} className={`w-full text-left px-6 py-2 transition flex items-center gap-3 border-l-[3px] ${activeTab === "faq" ? "border-blue-500 text-white font-bold bg-white/5" : "border-transparent text-slate-400 hover:text-blue-400 hover:bg-white/5"}`}><MessageSquare size={18} /><span className="text-[13px] truncate">Manajemen FAQ</span></button>
               </div>
@@ -729,6 +745,8 @@ function AdminDashboard() {
                 : activeTab === "web_settings" ? "Pusat Pengaturan Tampilan Web" 
                 : activeTab === "berita" ? "Pusat Berita & Artikel Web" 
                 : activeTab === "tentang" ? "Profil & Tentang Kami"
+                : activeTab === "config_tim" ? "Pengaturan Halaman Tim Kami" // <-- TAMBAHAN
+                : activeTab === "tim_kami" ? "Kelola Struktur & Anggota Tim" // <-- TAMBAHAN
                 : activeTab === "syarat" ? "Halaman Syarat & Ketentuan"
                 : activeTab === "faq" ? "Manajemen FAQ (Tanya Jawab)"
                 : activeTab === "users" ? "Manajemen User & Hak Akses (Role)"
@@ -1004,6 +1022,32 @@ function AdminDashboard() {
             </form>
           )}
 
+          {/* CONFIG: HALAMAN TIM KAMI */}
+          {activeTab === "config_tim" && (
+            <form onSubmit={handleSaveTimConfig} className="max-w-5xl mx-auto space-y-8 pb-10">
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b pb-4">1. Header Halaman Tim Kami</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div><label className={labelClass}>Judul Halaman</label><input type="text" name="heroTitle" value={formTimConfig.heroTitle} onChange={handleTimConfigChange} className={inputClass} required/></div>
+                  <div className="md:col-span-2"><label className={labelClass}>Deskripsi Pendek</label><textarea name="heroDesc" value={formTimConfig.heroDesc} onChange={handleTimConfigChange} rows="2" className={inputClass}></textarea></div>
+                  <div className="md:col-span-2"><label className={labelClass}>Upload Gambar Latar (Hero)</label><input type="file" onChange={(e) => handleImageUpload(e, null, null, null, 'heroBg', 'tim')} className="w-full text-sm border p-2.5 rounded-xl bg-slate-50"/></div>
+                </div>
+              </div>
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="text-lg font-bold text-[#1e3a8a] mb-6 border-b pb-4">2. Tampilan Struktur PT</h3>
+                <div>
+                  <label className={labelClass}>Model Tampilan Struktur Manajemen (Grid/Bagan)</label>
+                  <select name="layoutPT" value={formTimConfig.layoutPT} onChange={handleTimConfigChange} className={inputClass}>
+                    <option value="Grid">Model Grid Kartu Modern (Sama seperti divisi lain)</option>
+                    <option value="Bagan">Model Bagan Vertikal (Hirarki / Corporate Tree)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-2">*Opsi "Bagan" akan membuat jabatan direktur (urutan ke-1) tampil sendirian paling atas, diikuti jajaran di bawahnya.</p>
+                </div>
+              </div>
+              <button type="submit" disabled={isSubmitting || isUploading} className="w-full py-4 bg-[#f59e0b] hover:bg-yellow-600 text-white font-bold rounded-xl shadow-xl transition-colors text-lg">Simpan Pengaturan Halaman Tim</button>
+            </form>
+          )}
+
           {/* CONFIG: SYARAT KETENTUAN */}
           {activeTab === "syarat" && (
             <form onSubmit={handleSaveSyarat} className="max-w-4xl mx-auto space-y-8 pb-10">
@@ -1240,6 +1284,8 @@ function AdminDashboard() {
                               <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-md ${item.color || 'bg-[#1e3a8a]'}`}><DynamicIcon size={26} /></div>
                             ) : activeTab === "testimoni" ? (
                               <img src={item.img} alt={item.name} className="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200" />
+                            ) : activeTab === "tim_kami" ? (
+                              <img src={item.image || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} alt={item.nama} className="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200" />
                             ) : activeTab === "faq" ? (
                               <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">{item.kategori}</span>
                             ) : activeTab === "users" ? (
@@ -1250,9 +1296,12 @@ function AdminDashboard() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="font-bold text-gray-800 text-base mb-1 flex items-center gap-2 flex-wrap">
-                              {item.title || item.name || item.pertanyaan}
+                              {/* Tambahkan item.nama agar nama tim muncul */}
+                              {item.title || item.name || item.pertanyaan || item.nama}
+                              
                               {(activeTab === 'daerah' || activeTab === 'daerah_internasional') && (<span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{item.status || 'Aktif'}</span>)}
                               {activeTab === 'berita' && (<span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider bg-blue-100 text-blue-600">{item.tipe || 'Umroh'}</span>)}
+                              {activeTab === 'tim_kami' && (<span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${item.status === 'Nonaktif' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{item.status || 'Aktif'}</span>)}
                               
                               {/* LABEL STATUS KUOTA DI TABEL ADMIN */}
                               {(activeTab === 'umroh' || activeTab === 'domestik' || activeTab === 'internasional') && (
@@ -1271,9 +1320,13 @@ function AdminDashboard() {
                                 )
                               )}
                             </div>
+                            
                             <div className="text-xs text-gray-500 line-clamp-1">
+                              {/* Tambahkan kondisi khusus tim_kami agar jabatan muncul */}
                               {activeTab === "users" 
                                 ? `Username: ${item.username || (item.email ? item.email.split('@')[0] : '-')}` 
+                                : activeTab === "tim_kami"
+                                ? `${item.jabatan} • ${item.divisi}`
                                 : (item.deskripsi || item.text || item.daerah || item.negara || item.service || item.jawaban || (item.text && item.text.replace(/<[^>]*>?/gm, '')))}
                             </div>
                           </td>
@@ -1630,6 +1683,51 @@ function AdminDashboard() {
                     <div className="flex flex-col"><label className={labelClass}>Kategori Pertanyaan</label><select name="kategori" value={formFaq.kategori} onChange={(e) => handleChange(e, setFormFaq, formFaq)} className={inputClass}><option value="Umum">Pertanyaan Umum</option><option value="Umroh">Seputar Umroh</option><option value="Domestik">Trip Domestik</option><option value="Internasional">Trip Internasional</option></select></div>
                     <div className="flex flex-col"><label className={labelClass}>Pertanyaan (Tanya)</label><input type="text" name="pertanyaan" value={formFaq.pertanyaan} onChange={(e) => handleChange(e, setFormFaq, formFaq)} className={inputClass} required /></div>
                     <div className="flex flex-col"><label className={labelClass}>Jawaban Pendek</label><textarea name="jawaban" value={formFaq.jawaban} onChange={(e) => handleChange(e, setFormFaq, formFaq)} rows="4" className={inputClass} required></textarea></div>
+                  </div>
+                )}
+
+                {/* FORM TIM KAMI */}
+                {activeTab === "tim_kami" && (
+                  <div className="col-span-2 flex flex-col gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col"><label className={labelClass}>Nama Lengkap (beserta gelar jika ada)</label><input type="text" name="nama" value={formTimKami.nama} onChange={(e) => handleChange(e, setFormTimKami, formTimKami)} className={inputClass} required placeholder="Contoh: H. Ahmad Syauqi, Lc."/></div>
+                      <div className="flex flex-col"><label className={labelClass}>Jabatan / Tugas Khusus</label><input type="text" name="jabatan" value={formTimKami.jabatan} onChange={(e) => handleChange(e, setFormTimKami, formTimKami)} className={inputClass} required placeholder="Contoh: Direktur Utama / Mutawwif"/></div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="flex flex-col">
+                        <label className={labelClass}>Pilih Divisi Penempatan</label>
+                        <select name="divisi" value={formTimKami.divisi} onChange={(e) => handleChange(e, setFormTimKami, formTimKami)} className={inputClass}>
+                          <option value="Struktur PT">Struktur PT (Manajemen Inti)</option>
+                          <option value="Pembimbing Umroh">Pembimbing Ibadah Umroh</option>
+                          <option value="Tour Leader">Tour Leader (Pemandu)</option>
+                          <option value="Tim Handling (Mekah/Madinah)">Tim Handling (Mekah/Madinah)</option>
+                          <option value="Tim Wisata / Operasional">Tim Wisata / Operasional Kantor</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col">
+                        <label className={labelClass}>Urutan Tampil (Makin kecil makin awal)</label>
+                        <input type="number" name="urutan" value={formTimKami.urutan} onChange={(e) => handleChange(e, setFormTimKami, formTimKami)} className={inputClass} placeholder="1, 2, 3..."/>
+                      </div>
+                      <div className="flex flex-col">
+                        <label className={labelClass}>Status Penayangan</label>
+                        <select name="status" value={formTimKami.status} onChange={(e) => handleChange(e, setFormTimKami, formTimKami)} className={inputClass}>
+                          <option value="Aktif">Aktif (Tampil di Web)</option>
+                          <option value="Nonaktif">Sembunyikan (Draft)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col">
+                        <label className={labelClass}>Upload Foto Profil</label>
+                        <input type="file" onChange={(e) => handleImageUpload(e, null, null, null, null)} className="w-full border border-gray-200 p-2.5 rounded-xl bg-white text-sm outline-none"/>
+                      </div>
+                      <div className="flex flex-col">
+                        <label className={labelClass}>Kata Mutiara / Quote Singkat (Opsional)</label>
+                        <textarea name="quote" value={formTimKami.quote} onChange={(e) => handleChange(e, setFormTimKami, formTimKami)} rows="2" className={inputClass} placeholder='"Melayani jamaah dengan ikhlas..."'></textarea>
+                      </div>
+                    </div>
                   </div>
                 )}
                 

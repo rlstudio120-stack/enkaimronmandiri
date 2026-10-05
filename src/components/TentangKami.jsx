@@ -59,10 +59,9 @@ function TentangKami() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 md:p-12">
             <h2 className="text-2xl md:text-3xl font-bold text-[#1e3a8a] mb-8 border-b border-gray-100 pb-6 text-center">Sejarah & Profil Perusahaan</h2>
-            <div className="text-gray-700 leading-loose text-base md:text-lg 
-              [&>p]:mb-5 [&>h3]:text-xl [&>h3]:font-bold [&>h3]:text-[#1e3a8a] [&>h3]:mb-4 [&>h3]:mt-8
-              [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-5 [&>ul>li]:mb-2"
-              dangerouslySetInnerHTML={{ __html: data.deskripsi }} />
+            <div className="konten-html text-gray-700 leading-loose text-base md:text-lg 
+                [&>p]:mb-5 [&>h3]:text-xl [&>h3]:font-bold [&>h3]:text-[#1e3a8a] [&>h3]:mb-4 [&>h3]:mt-8"
+                dangerouslySetInnerHTML={{ __html: data.deskripsi }} />
           </div>
         </div>
       )}

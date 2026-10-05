@@ -184,7 +184,8 @@ function DetailInternasional() {
 
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
               <h3 className="text-xl font-bold text-[#1e3a8a] mb-6 border-b pb-4">Rincian Perjalanan (Itinerary)</h3>
-              <div className="text-gray-700 leading-relaxed text-sm md:text-base [&>p]:mb-4 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:text-[#1e3a8a] [&>h3]:mb-3 [&>h3]:mt-6 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ul>li]:mb-1.5" dangerouslySetInnerHTML={{ __html: paket.deskripsi }} />
+              <div className="konten-html text-gray-700 leading-relaxed text-sm md:text-base [&>p]:mb-4 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:text-[#1e3a8a] [&>h3]:mb-3 [&>h3]:mt-6" 
+     dangerouslySetInnerHTML={{ __html: paket.deskripsi }} />
             </div>
 
             {paket.informasiTambahan && paket.informasiTambahan.length > 0 && (
@@ -198,7 +199,7 @@ function DetailInternasional() {
                         {openAccordion === index ? <ChevronUp size={18} className="text-gray-500" /> : <ChevronDown size={18} className="text-gray-500" />}
                       </button>
                       <div className={`transition-all duration-300 ${openAccordion === index ? "max-h-[1000px] opacity-100 border-t border-gray-200" : "max-h-0 opacity-0 overflow-hidden"}`}>
-                        <div className="p-6 text-sm text-gray-600 [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-1" dangerouslySetInnerHTML={{ __html: info.isi }} />
+                        <div className="konten-html p-6 text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: info.isi }} />
                       </div>
                     </div>
                   ))}
@@ -269,7 +270,7 @@ function DetailInternasional() {
                   className={`w-full text-white font-bold py-4 rounded-xl shadow-lg transition-colors text-sm md:text-base flex items-center justify-center gap-2 ${
                     isFullBooked 
                       ? "bg-slate-700 hover:bg-slate-800 shadow-slate-500/20" 
-                      : "bg-[#f59e0b] hover:bg-yellow-600 shadow-yellow-500/30"
+                      : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30"
                   }`}
                 >
                   {isFullBooked ? "Kuota Penuh • Tanya Jadwal Lain" : "Konsultasi via WA"} <ChevronRight size={18}/>
